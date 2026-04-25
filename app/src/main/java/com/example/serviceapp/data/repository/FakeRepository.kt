@@ -196,6 +196,13 @@ object FakeRepository {
 
     fun setAvailability(status: String) { provider?.availability = status }
 
+    fun clearHistory() {
+        provider?.let { p ->
+            p.history.clear()
+            p.advance = 0.0
+        }
+    }
+
     // ── Job simulation ────────────────────────────────────────────────────────
     private fun startLoop() {
         loopJob?.cancel()

@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.serviceapp.data.model.ServiceRequest
 import com.example.serviceapp.navigation.Screen
+import com.example.serviceapp.ui.components.EmbeddedMap
+import com.example.serviceapp.ui.components.OpenMapsButton
 import com.example.serviceapp.viewmodel.ClientViewModel
 
 @Composable
@@ -65,6 +67,14 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
         ) {
             StatusCard(request)
             InfoCard(request)
+            // Map section
+            Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(2.dp)) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("📍 অবস্থান", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242))
+                    EmbeddedMap(address = request.address)
+                    OpenMapsButton(address = request.address, color = Color(0xFF1A237E))
+                }
+            }
             if (request.minRating > 0 || request.maxPrice > 0) FilterSummaryCard(request)
             if (request.status == "awaiting_approval") ProviderApprovalCard(request)
             else if (request.status == "accepted" || request.status == "completed") ProviderInfoCard(request)

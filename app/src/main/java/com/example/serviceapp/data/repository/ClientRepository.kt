@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.serviceapp.data.model.Client
 import com.example.serviceapp.data.model.ServiceRequest
+import com.example.serviceapp.utils.NotificationHelper
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -180,12 +181,32 @@ object ClientRepository {
     }
 
     // ── Real-time listener ────────────────────────────────────────────────────
+    private val notifiedRequests = mutableSetOf<String>()
+
     fun listenToRequests(): ListenerRegistration? {
         val uid = client?.id ?: return null
         return db.collection("requests").whereEqualTo("clientId", uid)
             .addSnapshotListener { snaps, _ ->
                 requests.clear()
                 snaps?.documents?.forEach { doc ->
+                    val status = doc.getString("status") ?: "pending"
+                    val rid    = doc.id
+
+                    // Fire notification once when provider is matched
+                    if (status == "awaiting_approval" && rid !in notifiedRequests) {
+                        notifiedRequests.add(rid)
+                        NotificationHelper.showProviderFoundNotification(
+                            providerName = doc.getString("providerName") ?: "মিস্ত্রি",
+                            serviceType  = doc.getString("serviceType")  ?: "",
+                            baseFee      = doc.getDouble("providerBaseFee") ?: 0.0,
+                            rating       = doc.getDouble("providerRating")  ?: 0.0
+                        )
+                    }
+                    if (status == "no_provider" && rid !in notifiedRequests) {
+                        notifiedRequests.add(rid)
+                        NotificationHelper.showRequestCancelledNotification()
+                    }
+
                     requests.add(ServiceRequest(
                         id              = doc.id,
                         clientId        = doc.getString("clientId")       ?: "",

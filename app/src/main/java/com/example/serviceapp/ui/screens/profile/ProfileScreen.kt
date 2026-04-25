@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -37,8 +38,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,7 +73,8 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
 
     val p = vm.provider ?: return
 
-    val reviews = remember { mutableStateListOf<ReviewItem>() }
+    val reviews             = remember { mutableStateListOf<ReviewItem>() }
+    var showDeleteConfirm  by remember { mutableStateOf(false) }
     LaunchedEffect(p.id) {
         FirebaseFirestore.getInstance()
             .collection("reviews")
@@ -310,7 +315,22 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                 Spacer(Modifier.height(20.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(AppStrings.serviceHistory, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
-                    Text("${p.history.size} ${AppStrings.jobs}", fontSize = 12.sp, color = AppColors.TextSecondary)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("${p.history.size} ${AppStrings.jobs}", fontSize = 12.sp, color = AppColors.TextSecondary)
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = AppColors.Error.copy(alpha = 0.1f),
+                            modifier = Modifier.clickable { showDeleteConfirm = true }
+                        ) {
+                            Text(
+                                "🗑 মুছুন",
+                                fontSize = 11.sp,
+                                color = AppColors.Error,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
                 }
                 Spacer(Modifier.height(8.dp))
                 p.history.reversed().forEach { h ->
@@ -386,6 +406,24 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
 
             Spacer(Modifier.height(16.dp))
         }
+    }
+
+    // Delete history confirmation dialog
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title   = { Text("ইতিহাস মুছে ফেলুন?") },
+            text    = { Text("সব সেবার ইতিহাস এবং আয়ের রেকর্ড মুছে যাবে। এটি পূর্বাবস্থায় ফেরানো যাবে না।") },
+            confirmButton = {
+                Button(
+                    onClick = { vm.clearHistory(); showDeleteConfirm = false },
+                    colors  = ButtonDefaults.buttonColors(containerColor = AppColors.Error)
+                ) { Text("হ্যাঁ, মুছুন") }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showDeleteConfirm = false }) { Text("বাতিল") }
+            }
+        )
     }
 }
 
