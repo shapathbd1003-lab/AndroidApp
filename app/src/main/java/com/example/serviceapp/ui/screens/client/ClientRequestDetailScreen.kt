@@ -25,6 +25,7 @@ import com.example.serviceapp.data.model.ServiceRequest
 import com.example.serviceapp.navigation.Screen
 import com.example.serviceapp.ui.components.EmbeddedMap
 import com.example.serviceapp.ui.components.OpenMapsButton
+import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.viewmodel.ClientViewModel
 
 @Composable
