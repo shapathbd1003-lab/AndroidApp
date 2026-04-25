@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.serviceapp.navigation.NavGraph
+import com.example.serviceapp.viewmodel.ClientViewModel
 import com.example.serviceapp.viewmodel.MainViewModel
 
 class MainActivity : ComponentActivity() {
@@ -20,8 +21,9 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            val vm: MainViewModel = viewModel()
-            NavGraph(vm)
+            val vm:  MainViewModel  = viewModel()
+            val cvm: ClientViewModel = viewModel()
+            NavGraph(vm, cvm)
         }
     }
 }

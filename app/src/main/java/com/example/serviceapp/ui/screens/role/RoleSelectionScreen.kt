@@ -128,7 +128,7 @@ fun RoleSelectionScreen(vm: MainViewModel, nav: NavController) {
                     subtitle    = AppStrings.clientSubtitle,
                     iconBg      = Color(0xFF6A1B9A),
                     borderColor = Color.White.copy(alpha = 0.25f),
-                    onClick     = { nav.navigate(Screen.ClientDemo.route) }
+                    onClick     = { nav.navigate(Screen.ClientEntry.route) }
                 )
             }
         }
