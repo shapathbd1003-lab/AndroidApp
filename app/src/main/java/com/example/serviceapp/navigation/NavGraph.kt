@@ -20,7 +20,7 @@ fun NavGraph(vm: MainViewModel) {
 
     val nav = rememberNavController()
 
-    NavHost(nav, startDestination = Screen.RoleSelection.route) {
+    NavHost(nav, startDestination = Screen.Entry.route) {
 
         composable(Screen.RoleSelection.route) {
             RoleSelectionScreen(vm, nav)
