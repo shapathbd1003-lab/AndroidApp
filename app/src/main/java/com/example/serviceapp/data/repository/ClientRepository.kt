@@ -230,6 +230,18 @@ object ClientRepository {
             }
     }
 
+    // ── Delete history (completed + cancelled requests) ───────────────────────
+    suspend fun clearHistory(): Result<Unit> = runCatching {
+        val uid = client?.id ?: error("Not logged in")
+        val snaps = db.collection("requests")
+            .whereEqualTo("clientId", uid)
+            .whereIn("status", listOf("completed", "cancelled", "no_provider"))
+            .get().await()
+        val batch = db.batch()
+        snaps.documents.forEach { batch.delete(it.reference) }
+        batch.commit().await()
+    }
+
     fun logout() {
         auth.signOut()
         client   = null

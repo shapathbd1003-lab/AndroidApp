@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
@@ -44,11 +45,13 @@ fun ClientDashboardScreen(vm: ClientViewModel, nav: NavController) {
                 Text("স্বাগতম,", fontSize = 13.sp, color = Color.White.copy(alpha = 0.75f))
                 Text(vm.client?.name ?: "", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
-            IconButton(
-                onClick = { vm.logout(); nav.navigate(Screen.RoleSelection.route) { popUpTo(0) { inclusive = true } } },
-                modifier = Modifier.align(Alignment.CenterEnd)
-            ) {
-                Icon(Icons.Default.ExitToApp, null, tint = Color.White)
+            Row(modifier = Modifier.align(Alignment.CenterEnd)) {
+                IconButton(onClick = { nav.navigate(Screen.ClientProfile.route) }) {
+                    Icon(Icons.Default.AccountCircle, null, tint = Color.White)
+                }
+                IconButton(onClick = { vm.logout(); nav.navigate(Screen.RoleSelection.route) { popUpTo(0) { inclusive = true } } }) {
+                    Icon(Icons.Default.ExitToApp, null, tint = Color.White)
+                }
             }
         }
 

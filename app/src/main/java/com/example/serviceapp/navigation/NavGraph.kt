@@ -4,7 +4,13 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.serviceapp.ui.screens.client.*
+import com.example.serviceapp.ui.screens.client.ClientDashboardScreen
+import com.example.serviceapp.ui.screens.client.ClientEntryScreen
+import com.example.serviceapp.ui.screens.client.ClientLoginScreen
+import com.example.serviceapp.ui.screens.client.ClientNewRequestScreen
+import com.example.serviceapp.ui.screens.client.ClientProfileScreen
+import com.example.serviceapp.ui.screens.client.ClientRegisterScreen
+import com.example.serviceapp.ui.screens.client.ClientRequestDetailScreen
 import com.example.serviceapp.ui.screens.entry.EntryScreen
 import com.example.serviceapp.ui.screens.jobs.JobDetailScreen
 import com.example.serviceapp.ui.screens.login.LoginScreen
@@ -71,6 +77,9 @@ fun NavGraph(vm: MainViewModel, cvm: ClientViewModel) {
         composable(Screen.ClientRequestDetail.route) {
             val id = it.arguments?.getString("id") ?: ""
             ClientRequestDetailScreen(id, cvm, nav)
+        }
+        composable(Screen.ClientProfile.route) {
+            ClientProfileScreen(cvm, nav)
         }
     }
 }

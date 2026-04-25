@@ -87,6 +87,13 @@ class ClientViewModel : ViewModel() {
         }
     }
 
+    fun clearHistory(onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            ClientRepository.clearHistory()
+            onDone()
+        }
+    }
+
     // ── Listener ──────────────────────────────────────────────────────────────
     private fun startListening() {
         requestsListener?.remove()
