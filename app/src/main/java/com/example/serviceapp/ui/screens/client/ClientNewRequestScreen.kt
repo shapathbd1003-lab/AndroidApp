@@ -1,5 +1,9 @@
 package com.example.serviceapp.ui.screens.client
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,12 +16,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.example.serviceapp.navigation.Screen
+import com.example.serviceapp.utils.LocationHelper
 import com.example.serviceapp.viewmodel.ClientViewModel
+import kotlinx.coroutines.launch
 
 private val SERVICE_TYPES = listOf(
     "এসি রিপেয়ার", "প্লাম্বিং", "ইলেকট্রিক কাজ",
@@ -41,17 +49,52 @@ private val PRICE_FILTERS = listOf(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
-    var selectedService by remember { mutableStateOf("") }
-    var description     by remember { mutableStateOf("") }
-    var address         by remember { mutableStateOf("") }
-    var minRating       by remember { mutableStateOf(0.0) }
-    var maxPrice        by remember { mutableStateOf(0.0) }
+    var selectedService  by remember { mutableStateOf("") }
+    var description      by remember { mutableStateOf("") }
+    var address          by remember { mutableStateOf("") }
+    var minRating        by remember { mutableStateOf(0.0) }
+    var maxPrice         by remember { mutableStateOf(0.0) }
+    var locationLoading  by remember { mutableStateOf(false) }
 
-    val purple     = Color(0xFF6A1B9A)
-    val canSubmit  = selectedService.isNotEmpty() && description.isNotBlank() && address.isNotBlank()
+    val context = LocalContext.current
+    val scope   = rememberCoroutineScope()
+    val purple  = Color(0xFF6A1B9A)
+    val canSubmit = selectedService.isNotEmpty() && description.isNotBlank() && address.isNotBlank()
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = purple, focusedLabelColor = purple, cursorColor = purple
     )
+
+    // Permission launcher
+    val locationPermLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { perms ->
+        val granted = perms[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                      perms[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) {
+            locationLoading = true
+            scope.launch {
+                address = LocationHelper.getCurrentAddress(context) ?: address
+                locationLoading = false
+            }
+        }
+    }
+
+    fun fetchLocation() {
+        val fine   = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
+        if (fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED) {
+            locationLoading = true
+            scope.launch {
+                address = LocationHelper.getCurrentAddress(context) ?: address
+                locationLoading = false
+            }
+        } else {
+            locationPermLauncher.launch(arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ))
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -123,7 +166,31 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
             // Address
             Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(2.dp)) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("ঠিকানা", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242))
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("ঠিকানা", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242))
+                        OutlinedButton(
+                            onClick  = { fetchLocation() },
+                            enabled  = !locationLoading,
+                            shape    = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            colors   = ButtonDefaults.outlinedButtonColors(contentColor = purple),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            if (locationLoading) {
+                                CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = purple)
+                                Spacer(Modifier.width(6.dp))
+                                Text("খোঁজা হচ্ছে...", fontSize = 12.sp)
+                            } else {
+                                Icon(Icons.Default.MyLocation, null, modifier = Modifier.size(14.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("স্বয়ংক্রিয়", fontSize = 12.sp)
+                            }
+                        }
+                    }
                     Spacer(Modifier.height(10.dp))
                     OutlinedTextField(
                         value = address,

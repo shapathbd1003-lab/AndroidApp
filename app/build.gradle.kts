@@ -64,6 +64,9 @@ dependencies {
     // Kotlin coroutines support for Firebase Tasks (.await())
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
+    // Location (free — no API key needed)
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+
     // UI
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("androidx.compose.material:material-icons-core")
