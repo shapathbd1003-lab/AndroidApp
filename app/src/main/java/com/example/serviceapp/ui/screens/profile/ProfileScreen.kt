@@ -36,6 +36,9 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,11 +55,38 @@ import com.example.serviceapp.ui.theme.AppColors
 import com.example.serviceapp.utils.AppLanguage
 import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.viewmodel.MainViewModel
+import com.google.firebase.firestore.FirebaseFirestore
+
+private data class ReviewItem(
+    val clientName: String,
+    val serviceType: String,
+    val rating: Int,
+    val comment: String
+)
 
 @Composable
 fun ProfileScreen(vm: MainViewModel, nav: NavController) {
 
     val p = vm.provider ?: return
+
+    val reviews = remember { mutableStateListOf<ReviewItem>() }
+    LaunchedEffect(p.id) {
+        FirebaseFirestore.getInstance()
+            .collection("reviews")
+            .whereEqualTo("providerId", p.id)
+            .get()
+            .addOnSuccessListener { snaps ->
+                reviews.clear()
+                snaps.documents.forEach { doc ->
+                    reviews.add(ReviewItem(
+                        clientName  = doc.getString("clientName")  ?: "গ্রাহক",
+                        serviceType = doc.getString("serviceType") ?: "",
+                        rating      = (doc.getLong("rating") ?: 0).toInt(),
+                        comment     = doc.getString("comment")     ?: ""
+                    ))
+                }
+            }
+    }
 
     val availabilityOptions = listOf("available", "working", "unavailable")
     val availabilityLabels = mapOf(
@@ -317,6 +347,39 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                         Spacer(Modifier.height(8.dp))
                         Text(AppStrings.noHistory, fontSize = 14.sp, color = AppColors.TextSecondary)
                         Text(AppStrings.acceptJobsHint, fontSize = 12.sp, color = Color(0xFFBDBDBD))
+                    }
+                }
+            }
+
+            // ── Reviews ───────────────────────────────────────────────────────
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("গ্রাহক রিভিউ", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
+                Text("${reviews.size} রিভিউ", fontSize = 12.sp, color = AppColors.TextSecondary)
+            }
+            Spacer(Modifier.height(8.dp))
+            if (reviews.isEmpty()) {
+                Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = AppColors.Surface), elevation = CardDefaults.cardElevation(1.dp)) {
+                    Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
+                        Text("এখনো কোনো রিভিউ নেই", fontSize = 13.sp, color = AppColors.TextSecondary)
+                    }
+                }
+            } else {
+                reviews.forEach { review ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = AppColors.Surface),
+                        elevation = CardDefaults.cardElevation(2.dp)
+                    ) {
+                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(review.clientName, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
+                                Text("${"⭐".repeat(review.rating)}", fontSize = 13.sp)
+                            }
+                            if (review.serviceType.isNotBlank()) Text(review.serviceType, fontSize = 11.sp, color = AppColors.TextSecondary)
+                            if (review.comment.isNotBlank()) Text("\"${review.comment}\"", fontSize = 13.sp, color = AppColors.TextPrimary)
+                        }
                     }
                 }
             }
