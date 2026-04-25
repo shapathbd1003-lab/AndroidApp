@@ -1,4 +1,4 @@
-package com.example.serviceapp.ui.screens.client
+﻿package com.example.serviceapp.ui.screens.client
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -120,7 +120,7 @@ private fun RequestCard(req: ServiceRequest, onClick: () -> Unit) {
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(req.serviceType, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1A237E))
+                Text(AppStrings.serviceTypeName(req.serviceType), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1A237E))
                 Surface(shape = RoundedCornerShape(20.dp), color = statusColor.copy(alpha = 0.12f)) {
                     Text(statusLabel, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = statusColor, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp))
                 }

@@ -1,4 +1,4 @@
-package com.example.serviceapp.ui.screens.client
+﻿package com.example.serviceapp.ui.screens.client
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -165,7 +165,7 @@ private fun InfoCard(req: ServiceRequest) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(AppStrings.requestInfo, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242))
             HorizontalDivider()
-            InfoRow("🔧 ${AppStrings.serviceTypeLabel}", req.serviceType)
+            InfoRow("🔧 ${AppStrings.serviceTypeLabel}", AppStrings.serviceTypeName(req.serviceType))
             InfoRow("📝 ${AppStrings.problemDescLabel}", req.description)
             // Address row with inline map button
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {

@@ -1,4 +1,4 @@
-package com.example.serviceapp.ui.screens.client
+﻿package com.example.serviceapp.ui.screens.client
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -104,10 +104,10 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                     Text(AppStrings.serviceTypeLabel, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242))
                     Spacer(Modifier.height(10.dp))
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SERVICE_TYPES.forEach { type ->
+                        AppStrings.allServiceTypes.forEach { (bnKey, displayLabel) ->
                             FilterChip(
-                                selected = selectedService == type, onClick = { selectedService = type },
-                                label = { Text(type, fontSize = 13.sp) },
+                                selected = selectedService == bnKey, onClick = { selectedService = bnKey },
+                                label = { Text(displayLabel, fontSize = 13.sp) },
                                 colors = FilterChipDefaults.filterChipColors(selectedContainerColor = purple, selectedLabelColor = Color.White)
                             )
                         }

@@ -1,4 +1,4 @@
-package com.example.serviceapp.ui.screens.client
+﻿package com.example.serviceapp.ui.screens.client
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -203,7 +203,7 @@ private fun MiniRequestCard(req: ServiceRequest, purple: Color, onClick: () -> U
     ) {
         Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(req.serviceType, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = purple)
+                Text(AppStrings.serviceTypeName(req.serviceType), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = purple)
                 Text(req.address, fontSize = 12.sp, color = Color(0xFF9E9E9E))
             }
             val (color, label) = when (req.status) {
@@ -233,7 +233,7 @@ private fun HistoryCard(req: ServiceRequest, nav: NavController) {
     ) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(req.serviceType, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF212121))
+                Text(AppStrings.serviceTypeName(req.serviceType), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF212121))
                 Text(label, fontSize = 12.sp, color = Color(0xFF424242))
             }
             if (req.providerName.isNotBlank()) Text("মিস্ত্রি: ${req.providerName}", fontSize = 12.sp, color = Color(0xFF757575))
