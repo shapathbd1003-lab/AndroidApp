@@ -1,4 +1,4 @@
-package com.example.serviceapp.ui.screens.profile
+﻿package com.example.serviceapp.ui.screens.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -95,8 +95,7 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                 Spacer(Modifier.height(4.dp))
                 if (p.serviceType.isNotBlank()) {
                     Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.2f)) {
-                        Text(
-                            p.serviceType,
+                        Text(AppStrings.serviceTypeName(p.serviceType),
                             fontSize = 12.sp,
                             color = Color.White,
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)

@@ -1,4 +1,4 @@
-package com.example.serviceapp.ui.screens.register
+﻿package com.example.serviceapp.ui.screens.register
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -261,11 +261,11 @@ fun RegisterScreen(vm: MainViewModel, nav: NavController) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    vm.serviceTypes.forEach { type ->
+                    AppStrings.allServiceTypes.forEach { (bnKey, displayLabel) ->
                         FilterChip(
-                            selected = selectedService == type,
-                            onClick = { selectedService = type },
-                            label = { Text(type, fontSize = 12.sp) },
+                            selected = selectedService == bnKey,
+                            onClick = { selectedService = bnKey },
+                            label = { Text(displayLabel, fontSize = 12.sp) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = AppColors.Primary,
                                 selectedLabelColor = Color.White

@@ -129,4 +129,24 @@ object AppStrings {
     val uploadCertificate get() = if (isBn) "সার্টিফিকেট আপলোড করুন" else "Upload Certificate"
     val noCertificate    get() = if (isBn) "কোনো সার্টিফিকেট নেই" else "No certificate uploaded"
     val viewCertificate  get() = if (isBn) "সার্টিফিকেট দেখুন" else "View Certificate"
+
+    // ── Service type translations ────────────────────────────────────────────
+    private val serviceTypeMap = mapOf(
+        "এসি রিপেয়ার"       to "AC Repair",
+        "প্লাম্বিং"          to "Plumbing",
+        "ইলেকট্রিক কাজ"      to "Electrical Work",
+        "ডিপ ক্লিনিং"        to "Deep Cleaning",
+        "রং করা"             to "Painting",
+        "কাঠের কাজ"          to "Carpentry",
+        "যন্ত্রপাতি মেরামত"  to "Appliance Repair",
+        "পোকামাকড় নিয়ন্ত্রণ" to "Pest Control"
+    )
+
+    // Translate stored Bengali key → current language label
+    fun serviceTypeName(bnKey: String): String =
+        if (isBn) bnKey else serviceTypeMap[bnKey] ?: bnKey
+
+    // All service types as (bnKey, displayLabel) pairs for chips/selectors
+    val allServiceTypes: List<Pair<String, String>> get() =
+        serviceTypeMap.entries.map { (k, v) -> k to if (isBn) k else v }
 }
