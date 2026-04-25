@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "749521391969",
+    "project_id": "servicepro-fc58a",
+    "storage_bucket": "servicepro-fc58a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:749521391969:android:e00cefc3c47282c467b520",
+        "android_client_info": {
+          "package_name": "com.example.serviceapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBiT87WnSVcJ5gR6xq0FGrVGWJdrS1EcPM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

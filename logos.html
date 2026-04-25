@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>মিস্ত্রি চাই — Logo</title>
+<style>
+  body { background: #F0F2F8; font-family: 'Segoe UI', sans-serif; padding: 40px; }
+  h1 { color: #1A237E; margin-bottom: 8px; }
+  p  { color: #757575; margin-bottom: 40px; }
+  .logos { display: flex; gap: 48px; flex-wrap: wrap; align-items: flex-start; }
+  .logo-box { text-align: center; }
+  .logo-box h3 { margin: 16px 0 4px; color: #1A237E; font-size: 16px; }
+  .logo-box p  { margin: 0 0 12px; color: #9E9E9E; font-size: 13px; }
+  canvas { border-radius: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); display: block; }
+  .btn {
+    display: inline-block; margin-top: 10px; padding: 8px 20px;
+    background: #1A237E; color: white; border-radius: 8px;
+    font-size: 13px; cursor: pointer; border: none; font-family: inherit;
+  }
+  .btn:hover { background: #283593; }
+</style>
+</head>
+<body>
+<h1>মিস্ত্রি চাই — Logo Option 1</h1>
+<p>Click Download to save as PNG. The app icon version (no text) is also shown.</p>
+<div class="logos">
+
+  <!-- Full logo with text -->
+  <div class="logo-box">
+    <canvas id="cFull" width="512" height="512"></canvas>
+    <h3>Full Logo (512×512)</h3>
+    <p>With text — for splash screen, website</p>
+    <button class="btn" onclick="download('cFull','mistri-chai-logo-full.png')">⬇ Download</button>
+  </div>
+
+  <!-- App icon (no text) -->
+  <div class="logo-box">
+    <canvas id="cIcon" width="512" height="512"></canvas>
+    <h3>App Icon (512×512)</h3>
+    <p>No text — for Play Store, home screen</p>
+    <button class="btn" onclick="download('cIcon','mistri-chai-icon.png')">⬇ Download</button>
+  </div>
+
+  <!-- Round icon -->
+  <div class="logo-box">
+    <canvas id="cRound" width="512" height="512"></canvas>
+    <h3>Round Icon (512×512)</h3>
+    <p>Circle variant</p>
+    <button class="btn" onclick="download('cRound','mistri-chai-icon-round.png')">⬇ Download</button>
+  </div>
+
+</div>
+
+<script>
+function download(id, name) {
+  const a = document.createElement('a');
+  a.href = document.getElementById(id).toDataURL('image/png');
+  a.download = name;
+  a.click();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+// Draw the shield + wrench on any canvas
+function drawShield(ctx, cx, cy, scale, withText) {
+  const S = 512;
+
+  // Shield shape
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(scale, scale);
+
+  // Shield fill
+  ctx.beginPath();
+  ctx.moveTo(0, -150);
+  ctx.bezierCurveTo(75, -150, 140, -108, 140, -46);
+  ctx.bezierCurveTo(140, 55, 55, 126, 0, 155);
+  ctx.bezierCurveTo(-55, 126, -140, 55, -140, -46);
+  ctx.bezierCurveTo(-140, -108, -75, -150, 0, -150);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(255,255,255,0.13)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.40)';
+  ctx.lineWidth = 6 / scale;
+  ctx.stroke();
+
+  // Shield inner line
+  ctx.beginPath();
+  ctx.moveTo(0, -120);
+  ctx.bezierCurveTo(55, -120, 108, -85, 108, -36);
+  ctx.bezierCurveTo(108, 44, 44, 100, 0, 122);
+  ctx.bezierCurveTo(-44, 100, -108, 44, -108, -36);
+  ctx.bezierCurveTo(-108, -85, -55, -120, 0, -120);
+  ctx.closePath();
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 3 / scale;
+  ctx.stroke();
+
+  ctx.restore();
+
+  // Wrench (Material build icon scaled to fit inside shield)
+  const ws = scale * 7.0;
+  ctx.save();
+  ctx.translate(cx - 24 * ws / 2 + ws * 1.5, cy - 24 * ws / 2 - scale * 8);
+  ctx.scale(ws, ws);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.moveTo(22.7, 19);
+  ctx.lineTo(13.6, 9.9);
+  ctx.bezierCurveTo(14.5,7.6, 14,4.9, 12.1,3);
+  ctx.bezierCurveTo(10.1,1,  7.1,0.6, 4.7,1.7);
+  ctx.lineTo(9,6); ctx.lineTo(6,9); ctx.lineTo(1.6,4.7);
+  ctx.bezierCurveTo(0.4,7.1, 0.9,10.1, 2.9,12.1);
+  ctx.bezierCurveTo(4.8,14,  7.5,14.5, 9.8,13.6);
+  ctx.lineTo(18.9,22.7);
+  ctx.bezierCurveTo(19.3,23.1, 19.9,23.1, 20.3,22.7);
+  ctx.lineTo(22.6,20.4);
+  ctx.bezierCurveTo(23.1,20, 23.1,19.3, 22.7,19);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Gold accent dot
+  const dotR = scale * 26;
+  const dotX = cx + scale * 95;
+  const dotY = cy - scale * 108;
+  ctx.beginPath();
+  ctx.arc(dotX, dotY, dotR, 0, Math.PI*2);
+  ctx.fillStyle = '#FFB300';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(dotX, dotY, dotR * 0.5, 0, Math.PI*2);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fill();
+}
+
+// ── FULL LOGO (with text) ──────────────────────────────────────
+(function() {
+  const cv = document.getElementById('cFull');
+  const ctx = cv.getContext('2d');
+  const S = 512;
+
+  // Background
+  const bg = ctx.createLinearGradient(0, 0, S, S);
+  bg.addColorStop(0, '#1A237E');
+  bg.addColorStop(1, '#3949AB');
+  roundRect(ctx, 0, 0, S, S, 80);
+  ctx.fillStyle = bg;
+  ctx.fill();
+
+  // Radial glow
+  const glow = ctx.createRadialGradient(S/2, S*0.38, 40, S/2, S*0.38, 260);
+  glow.addColorStop(0, 'rgba(100,120,255,0.22)');
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, S, S);
+
+  // Shield + wrench centered in TOP 62% of canvas
+  drawShield(ctx, S/2, S * 0.36, 1.0, false);
+
+  // Divider line
+  ctx.beginPath();
+  ctx.moveTo(S*0.2, S*0.685);
+  ctx.lineTo(S*0.8, S*0.685);
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Bengali text
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 56px "Segoe UI", "SolaimanLipi", sans-serif';
+  ctx.fillText('মিস্ত্রি চাই', S/2, S * 0.785);
+
+  // Tagline
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.font = '500 22px "Segoe UI", sans-serif';
+  ctx.fillText('PROVIDER PLATFORM  •  BD', S/2, S * 0.868);
+
+  // Amber dot accent left of tagline
+  ctx.beginPath();
+  ctx.arc(S*0.5 - 148, S*0.868 - 7, 5, 0, Math.PI*2);
+  ctx.fillStyle = '#FFB300';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(S*0.5 + 148, S*0.868 - 7, 5, 0, Math.PI*2);
+  ctx.fillStyle = '#FFB300';
+  ctx.fill();
+})();
+
+// ── APP ICON (no text, centered) ──────────────────────────────
+(function() {
+  const cv = document.getElementById('cIcon');
+  const ctx = cv.getContext('2d');
+  const S = 512;
+
+  // Background
+  const bg = ctx.createLinearGradient(0, 0, S, S);
+  bg.addColorStop(0, '#1A237E');
+  bg.addColorStop(1, '#3949AB');
+  roundRect(ctx, 0, 0, S, S, 108);
+  ctx.fillStyle = bg;
+  ctx.fill();
+
+  // Glow
+  const glow = ctx.createRadialGradient(S/2, S/2, 40, S/2, S/2, 280);
+  glow.addColorStop(0, 'rgba(100,120,255,0.20)');
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, S, S);
+
+  // Shield + wrench dead center
+  drawShield(ctx, S/2, S/2, 1.05, false);
+})();
+
+// ── ROUND ICON ─────────────────────────────────────────────────
+(function() {
+  const cv = document.getElementById('cRound');
+  const ctx = cv.getContext('2d');
+  const S = 512;
+
+  // Clip to circle
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(S/2, S/2, S/2, 0, Math.PI*2);
+  ctx.clip();
+
+  // Background
+  const bg = ctx.createLinearGradient(0, 0, S, S);
+  bg.addColorStop(0, '#1A237E');
+  bg.addColorStop(1, '#3949AB');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, S, S);
+
+  // Glow
+  const glow = ctx.createRadialGradient(S/2, S/2, 40, S/2, S/2, 280);
+  glow.addColorStop(0, 'rgba(100,120,255,0.20)');
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, S, S);
+
+  // Shield + wrench
+  drawShield(ctx, S/2, S/2, 1.05, false);
+
+  ctx.restore();
+})();
+</script>
+</body>
+</html>
