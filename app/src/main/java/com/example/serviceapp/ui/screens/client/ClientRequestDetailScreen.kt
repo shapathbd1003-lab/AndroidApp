@@ -67,14 +67,6 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
         ) {
             StatusCard(request)
             InfoCard(request)
-            // Map section
-            Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(2.dp)) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("📍 অবস্থান", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242))
-                    EmbeddedMap(address = request.address)
-                    OpenMapsButton(address = request.address, color = Color(0xFF1A237E))
-                }
-            }
             if (request.minRating > 0 || request.maxPrice > 0) FilterSummaryCard(request)
             if (request.status == "awaiting_approval") ProviderApprovalCard(request)
             else if (request.status == "accepted" || request.status == "completed") ProviderInfoCard(request)
@@ -170,11 +162,19 @@ private fun StatusCard(req: ServiceRequest) {
 private fun InfoCard(req: ServiceRequest) {
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(2.dp)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("অনুরোধের তথ্য", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242))
+            Text(AppStrings.requestInfo, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242))
             HorizontalDivider()
-            InfoRow("🔧 সেবা", req.serviceType)
-            InfoRow("📝 বিবরণ", req.description)
-            InfoRow("📍 ঠিকানা", req.address)
+            InfoRow("🔧 ${AppStrings.serviceTypeLabel}", req.serviceType)
+            InfoRow("📝 ${AppStrings.problemDescLabel}", req.description)
+            // Address row with inline map button
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+                Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("📍 ${AppStrings.addressLabel}", fontSize = 13.sp, color = Color(0xFF757575), modifier = Modifier.widthIn(min = 90.dp))
+                    Text(req.address, fontSize = 13.sp, color = Color(0xFF212121), fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+                }
+                Spacer(Modifier.width(8.dp))
+                OpenMapsButton(address = req.address, color = Color(0xFF6A1B9A), compact = true)
+            }
         }
     }
 }

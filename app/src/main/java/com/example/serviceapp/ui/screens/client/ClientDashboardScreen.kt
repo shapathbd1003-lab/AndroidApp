@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.serviceapp.data.model.ServiceRequest
 import com.example.serviceapp.navigation.Screen
+import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.viewmodel.ClientViewModel
 
 @Composable
@@ -42,7 +43,7 @@ fun ClientDashboardScreen(vm: ClientViewModel, nav: NavController) {
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
             Column {
-                Text("স্বাগতম,", fontSize = 13.sp, color = Color.White.copy(alpha = 0.75f))
+                Text(AppStrings.welcomeClient, fontSize = 13.sp, color = Color.White.copy(alpha = 0.75f))
                 Text(vm.client?.name ?: "", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
             Row(modifier = Modifier.align(Alignment.CenterEnd)) {
@@ -61,8 +62,8 @@ fun ClientDashboardScreen(vm: ClientViewModel, nav: NavController) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("🔧", fontSize = 56.sp)
                     Spacer(Modifier.height(12.dp))
-                    Text("এখনো কোনো অনুরোধ নেই", fontSize = 16.sp, color = Color(0xFF757575))
-                    Text("নিচের বাটনে চাপ দিয়ে সেবা নিন", fontSize = 13.sp, color = Color(0xFF9E9E9E), modifier = Modifier.padding(top = 4.dp))
+                    Text(AppStrings.noRequestsYet, fontSize = 16.sp, color = Color(0xFF757575))
+                    Text(AppStrings.tapToRequest, fontSize = 13.sp, color = Color(0xFF9E9E9E), modifier = Modifier.padding(top = 4.dp))
                 }
             }
         } else {
@@ -94,7 +95,7 @@ fun ClientDashboardScreen(vm: ClientViewModel, nav: NavController) {
             ) {
                 Icon(Icons.Default.Add, null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("নতুন সেবার অনুরোধ", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(AppStrings.newRequestBtn, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

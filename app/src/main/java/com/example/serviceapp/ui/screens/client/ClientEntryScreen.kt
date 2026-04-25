@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.serviceapp.navigation.Screen
+import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.viewmodel.ClientViewModel
 
 const val TEST_CLIENT_EMAIL    = "client@test.com"
@@ -54,30 +55,25 @@ fun ClientEntryScreen(vm: ClientViewModel, nav: NavController) {
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
-                    modifier = Modifier
-                        .size(90.dp)
-                        .background(Color.White.copy(alpha = 0.18f), CircleShape),
+                    modifier = Modifier.size(90.dp).background(Color.White.copy(alpha = 0.18f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.size(48.dp))
                 }
                 Spacer(Modifier.height(20.dp))
-                Text("মিস্ত্রি চাই", fontSize = 36.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                Text(AppStrings.appName, fontSize = 36.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
                 Spacer(Modifier.height(8.dp))
-                Text("সেবা নিন — দ্রুত ও সহজে", fontSize = 15.sp, color = Color.White.copy(alpha = 0.8f))
+                Text(AppStrings.clientSubtitle, fontSize = 15.sp, color = Color.White.copy(alpha = 0.8f))
             }
 
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(
                     onClick = { nav.navigate(Screen.ClientRegister.route) },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White)
                 ) {
-                    Text("নতুন অ্যাকাউন্ট তৈরি করুন", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF6A1B9A))
+                    Text(AppStrings.createAccount2, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF6A1B9A))
                 }
                 OutlinedButton(
                     onClick = { nav.navigate(Screen.ClientLogin.route) },
@@ -85,75 +81,46 @@ fun ClientEntryScreen(vm: ClientViewModel, nav: NavController) {
                     shape = RoundedCornerShape(16.dp),
                     border = androidx.compose.foundation.BorderStroke(1.5.dp, Color.White.copy(alpha = 0.7f))
                 ) {
-                    Text("সাইন ইন করুন", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    Text(AppStrings.signInClient, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                 }
 
                 // Test credentials card
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = Color.White.copy(alpha = 0.15f),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                Surface(shape = RoundedCornerShape(14.dp), color = Color.White.copy(alpha = 0.15f), modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(14.dp)) {
-                        Text(
-                            "🧪 টেস্ট অ্যাকাউন্ট",
-                            fontSize = 12.sp, fontWeight = FontWeight.Bold,
-                            color = Color.White.copy(alpha = 0.9f)
-                        )
+                        Text(AppStrings.testAccount, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.9f))
                         Spacer(Modifier.height(6.dp))
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text("Email: $TEST_CLIENT_EMAIL",    fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f))
-                                Text("Password: $TEST_CLIENT_PASSWORD", fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f))
-                            }
-                        }
+                        Text("Email: $TEST_CLIENT_EMAIL",       fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f))
+                        Text("Password: $TEST_CLIENT_PASSWORD", fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f))
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(
                                 onClick = {
                                     vm.loginAsync(TEST_CLIENT_EMAIL, TEST_CLIENT_PASSWORD) {
-                                        nav.navigate(Screen.ClientDashboard.route) {
-                                            popUpTo(Screen.ClientEntry.route) { inclusive = true }
-                                        }
+                                        nav.navigate(Screen.ClientDashboard.route) { popUpTo(Screen.ClientEntry.route) { inclusive = true } }
                                     }
                                 },
                                 modifier = Modifier.weight(1f).height(36.dp),
                                 shape = RoundedCornerShape(8.dp),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
                                 contentPadding = PaddingValues(0.dp)
-                            ) {
-                                Text("লগইন করুন", fontSize = 12.sp, color = Color.White)
-                            }
+                            ) { Text(AppStrings.loginNow, fontSize = 12.sp, color = Color.White) }
                             OutlinedButton(
                                 onClick = {
-                                    vm.registerAsync(
-                                        TEST_CLIENT_NAME, TEST_CLIENT_PHONE,
-                                        TEST_CLIENT_EMAIL, TEST_CLIENT_PASSWORD
-                                    ) {
-                                        nav.navigate(Screen.ClientDashboard.route) {
-                                            popUpTo(Screen.ClientEntry.route) { inclusive = true }
-                                        }
+                                    vm.registerAsync(TEST_CLIENT_NAME, TEST_CLIENT_PHONE, TEST_CLIENT_EMAIL, TEST_CLIENT_PASSWORD) {
+                                        nav.navigate(Screen.ClientDashboard.route) { popUpTo(Screen.ClientEntry.route) { inclusive = true } }
                                     }
                                 },
                                 modifier = Modifier.weight(1f).height(36.dp),
                                 shape = RoundedCornerShape(8.dp),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
                                 contentPadding = PaddingValues(0.dp)
-                            ) {
-                                Text("নিবন্ধন করুন", fontSize = 12.sp, color = Color.White)
-                            }
+                            ) { Text(AppStrings.registerNow, fontSize = 12.sp, color = Color.White) }
                         }
                     }
                 }
 
-                TextButton(
-                    onClick = { nav.popBackStack() },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("← পেছনে যান", color = Color.White.copy(alpha = 0.65f), fontSize = 14.sp)
+                TextButton(onClick = { nav.popBackStack() }, modifier = Modifier.fillMaxWidth()) {
+                    Text(AppStrings.goBack2, color = Color.White.copy(alpha = 0.65f), fontSize = 14.sp)
                 }
             }
         }
