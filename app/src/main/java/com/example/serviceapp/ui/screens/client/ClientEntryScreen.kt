@@ -18,8 +18,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.serviceapp.navigation.Screen
-import com.example.serviceapp.ui.theme.AppColors
 import com.example.serviceapp.viewmodel.ClientViewModel
+
+const val TEST_CLIENT_EMAIL    = "client@test.com"
+const val TEST_CLIENT_PASSWORD = "123456"
+const val TEST_CLIENT_NAME     = "Test User"
+const val TEST_CLIENT_PHONE    = "01700000000"
 
 @Composable
 fun ClientEntryScreen(vm: ClientViewModel, nav: NavController) {
@@ -35,7 +39,7 @@ fun ClientEntryScreen(vm: ClientViewModel, nav: NavController) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Color(0xFF6A1B9A), Color(0xFF9C27B0), Color(0xFFCE93D8))))
+            .background(Brush.verticalGradient(listOf(Color(0xFF4A148C), Color(0xFF9C27B0), Color(0xFFCE93D8))))
     ) {
         Column(
             modifier = Modifier
@@ -64,8 +68,8 @@ fun ClientEntryScreen(vm: ClientViewModel, nav: NavController) {
             }
 
             Column(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 52.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Button(
                     onClick = { nav.navigate(Screen.ClientRegister.route) },
@@ -83,6 +87,68 @@ fun ClientEntryScreen(vm: ClientViewModel, nav: NavController) {
                 ) {
                     Text("সাইন ইন করুন", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                 }
+
+                // Test credentials card
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color.White.copy(alpha = 0.15f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.padding(14.dp)) {
+                        Text(
+                            "🧪 টেস্ট অ্যাকাউন্ট",
+                            fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                            color = Color.White.copy(alpha = 0.9f)
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("Email: $TEST_CLIENT_EMAIL",    fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f))
+                                Text("Password: $TEST_CLIENT_PASSWORD", fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f))
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = {
+                                    vm.loginAsync(TEST_CLIENT_EMAIL, TEST_CLIENT_PASSWORD) {
+                                        nav.navigate(Screen.ClientDashboard.route) {
+                                            popUpTo(Screen.ClientEntry.route) { inclusive = true }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f).height(36.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Text("লগইন করুন", fontSize = 12.sp, color = Color.White)
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    vm.registerAsync(
+                                        TEST_CLIENT_NAME, TEST_CLIENT_PHONE,
+                                        TEST_CLIENT_EMAIL, TEST_CLIENT_PASSWORD
+                                    ) {
+                                        nav.navigate(Screen.ClientDashboard.route) {
+                                            popUpTo(Screen.ClientEntry.route) { inclusive = true }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f).height(36.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Text("নিবন্ধন করুন", fontSize = 12.sp, color = Color.White)
+                            }
+                        }
+                    }
+                }
+
                 TextButton(
                     onClick = { nav.popBackStack() },
                     modifier = Modifier.fillMaxWidth()

@@ -35,7 +35,8 @@ object ClientRepository {
 
     // ── Register ─────────────────────────────────────────────────────────────
     suspend fun register(
-        name: String, phone: String, email: String, password: String
+        name: String, phone: String, email: String, password: String,
+        avatar: String = ""
     ): Result<Unit> = runCatching {
         val result = auth.createUserWithEmailAndPassword(email.trim(), password).await()
         val uid    = result.user?.uid ?: error("No user ID")
@@ -45,11 +46,12 @@ object ClientRepository {
                 "name"      to name.trim(),
                 "phone"     to phone.trim(),
                 "email"     to email.trim(),
+                "avatar"    to avatar,
                 "createdAt" to FieldValue.serverTimestamp()
             )
         ).await()
 
-        client   = Client(id = uid, name = name.trim(), phone = phone.trim(), email = email.trim())
+        client   = Client(id = uid, name = name.trim(), phone = phone.trim(), email = email.trim(), avatar = avatar)
         loggedIn = true
     }
 
@@ -73,10 +75,11 @@ object ClientRepository {
     private suspend fun loadClientFromFirestore(uid: String) {
         val doc = db.collection("clients").document(uid).get().await()
         client = Client(
-            id    = uid,
-            name  = doc.getString("name")  ?: "",
-            phone = doc.getString("phone") ?: "",
-            email = doc.getString("email") ?: ""
+            id     = uid,
+            name   = doc.getString("name")   ?: "",
+            phone  = doc.getString("phone")  ?: "",
+            email  = doc.getString("email")  ?: "",
+            avatar = doc.getString("avatar") ?: ""
         )
     }
 

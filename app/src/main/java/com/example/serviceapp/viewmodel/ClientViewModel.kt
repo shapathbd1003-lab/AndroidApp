@@ -28,12 +28,13 @@ class ClientViewModel : ViewModel() {
 
     fun registerAsync(
         name: String, phone: String, email: String, password: String,
+        avatar: String = "",
         onSuccess: () -> Unit
     ) {
         viewModelScope.launch {
             registerLoading = true
             registerError   = ""
-            ClientRepository.register(name, phone, email, password).fold(
+            ClientRepository.register(name, phone, email, password, avatar).fold(
                 onSuccess = { registerLoading = false; startListening(); onSuccess() },
                 onFailure = { registerLoading = false; registerError = mapError(it) }
             )
