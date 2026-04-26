@@ -130,23 +130,72 @@ object AppStrings {
     val noCertificate    get() = if (isBn) "কোনো সার্টিফিকেট নেই" else "No certificate uploaded"
     val viewCertificate  get() = if (isBn) "সার্টিফিকেট দেখুন" else "View Certificate"
 
-    // ── Service type translations ────────────────────────────────────────────
-    private val serviceTypeMap = mapOf(
-        "এসি রিপেয়ার"       to "AC Repair",
-        "প্লাম্বিং"          to "Plumbing",
-        "ইলেকট্রিক কাজ"      to "Electrical Work",
-        "ডিপ ক্লিনিং"        to "Deep Cleaning",
-        "রং করা"             to "Painting",
-        "কাঠের কাজ"          to "Carpentry",
-        "যন্ত্রপাতি মেরামত"  to "Appliance Repair",
-        "পোকামাকড় নিয়ন্ত্রণ" to "Pest Control"
-    )
+    // ── Client strings ──────────────────────────────────────────────────────
+    val clientRegTitle     get() = if (isBn) "গ্রাহক নিবন্ধন" else "Client Registration"
+    val clientLoginTitle   get() = if (isBn) "গ্রাহক লগইন" else "Client Login"
+    val clientProfileTitle get() = if (isBn) "আমার প্রোফাইল" else "My Profile"
+    val createAccount2     get() = if (isBn) "নতুন অ্যাকাউন্ট তৈরি করুন" else "Create New Account"
+    val signInClient       get() = if (isBn) "সাইন ইন করুন" else "Sign In"
+    val goBack2            get() = if (isBn) "← পেছনে যান" else "← Go Back"
+    val noAccount          get() = if (isBn) "অ্যাকাউন্ট নেই? " else "No account? "
+    val registerNow        get() = if (isBn) "নিবন্ধন করুন" else "Register"
+    val createAccountBtn   get() = if (isBn) "অ্যাকাউন্ট তৈরি করুন →" else "Create Account →"
+    val welcomeClient      get() = if (isBn) "স্বাগতম," else "Welcome,"
+    val newRequestBtn      get() = if (isBn) "নতুন সেবার অনুরোধ" else "New Service Request"
+    val noRequestsYet      get() = if (isBn) "এখনো কোনো অনুরোধ নেই" else "No requests yet"
+    val tapToRequest       get() = if (isBn) "নিচের বাটনে চাপ দিয়ে সেবা নিন" else "Tap below to request a service"
+    val newRequestTitle    get() = if (isBn) "নতুন সেবার অনুরোধ" else "New Service Request"
+    val serviceTypeLabel   get() = if (isBn) "সেবার ধরন" else "Service Type"
+    val problemDescLabel   get() = if (isBn) "সমস্যার বিবরণ" else "Problem Description"
+    val problemDescHint    get() = if (isBn) "সমস্যাটি বিস্তারিত লিখুন..." else "Describe the problem in detail..."
+    val addressLabel       get() = if (isBn) "ঠিকানা" else "Address"
+    val addressHint        get() = if (isBn) "বাড়ি, রাস্তা, এলাকা" else "House, road, area"
+    val autoLocationBtn    get() = if (isBn) "স্বয়ংক্রিয়" else "Auto"
+    val fetchingLocation   get() = if (isBn) "খোঁজা হচ্ছে..." else "Fetching..."
+    val providerFilter     get() = if (isBn) "মিস্ত্রি ফিল্টার" else "Provider Filter"
+    val minRatingLabel     get() = if (isBn) "সর্বনিম্ন রেটিং" else "Minimum Rating"
+    val maxFeeLabel        get() = if (isBn) "সর্বোচ্চ বেস ফি" else "Maximum Base Fee"
+    val anyFilter          get() = if (isBn) "যেকোনো" else "Any"
+    val sendRequestBtn     get() = if (isBn) "অনুরোধ পাঠান →" else "Send Request →"
+    val fillAllFields2     get() = if (isBn) "সব তথ্য পূরণ করুন" else "Fill all fields"
+    val requestDetailTitle get() = if (isBn) "অনুরোধের বিবরণ" else "Request Details"
+    val requestInfo        get() = if (isBn) "অনুরোধের তথ্য" else "Request Info"
+    val providerProposal   get() = if (isBn) "মিস্ত্রির প্রস্তাব" else "Provider Proposal"
+    val assignedProvider   get() = if (isBn) "নিযুক্ত মিস্ত্রি" else "Assigned Provider"
+    val agreeBtn           get() = if (isBn) "✅ রাজি আছি" else "✅ Agree"
+    val disagreeBtn        get() = if (isBn) "❌ না, ধন্যবাদ" else "❌ No, thanks"
+    val markDoneBtn        get() = if (isBn) "✅ কাজ সম্পন্ন হয়েছে" else "✅ Mark as Done"
+    val cancelRequestBtn   get() = if (isBn) "অনুরোধ বাতিল করুন" else "Cancel Request"
+    val submitReviewBtn    get() = if (isBn) "রেটিং ও রিভিউ জমা দিন ⭐" else "Submit Rating & Review ⭐"
+    val backToDashboard    get() = if (isBn) "ড্যাশবোর্ডে ফিরুন" else "Back to Dashboard"
+    val openInMaps         get() = if (isBn) "Google Maps এ খুলুন" else "Open in Google Maps"
+    val rateAndReview      get() = if (isBn) "রেটিং ও রিভিউ দিন" else "Rate & Review"
+    val yourReview         get() = if (isBn) "আপনার রিভিউ" else "Your Review"
+    val reviewHint         get() = if (isBn) "আপনার অভিজ্ঞতা লিখুন (ঐচ্ছিক)" else "Write your experience (optional)"
+    val totalRequests      get() = if (isBn) "মোট অনুরোধ" else "Total Requests"
+    val avgRating          get() = if (isBn) "গড় রেটিং" else "Avg Rating"
+    val clientHistory      get() = if (isBn) "সেবার ইতিহাস" else "Service History"
+    val deleteHistoryBtn   get() = if (isBn) "🗑 মুছুন" else "🗑 Delete"
+    val deleteHistoryTitle get() = if (isBn) "ইতিহাস মুছে ফেলুন?" else "Delete History?"
+    val deleteHistoryMsg   get() = if (isBn) "সব সম্পন্ন ও বাতিল অনুরোধ মুছে যাবে।" else "All completed & cancelled requests will be deleted."
+    val yesDelete          get() = if (isBn) "হ্যাঁ, মুছুন" else "Yes, Delete"
+    val cancelBtn          get() = if (isBn) "বাতিল" else "Cancel"
+    val noHistoryClient    get() = if (isBn) "এখনো কোনো ইতিহাস নেই" else "No history yet"
+    val activeRequests     get() = if (isBn) "চলমান অনুরোধ" else "Active Requests"
+    val providerName       get() = if (isBn) "মিস্ত্রির নাম" else "Provider Name"
+    val providerPhone      get() = if (isBn) "মিস্ত্রির ফোন" else "Provider Phone"
+    val providerRatingLbl  get() = if (isBn) "রেটিং" else "Rating"
+    val providerFeeLbl     get() = if (isBn) "বেস ফি" else "Base Fee"
+    val testAccount        get() = if (isBn) "🧪 টেস্ট অ্যাকাউন্ট" else "🧪 Test Account"
+    val loginNow           get() = if (isBn) "লগইন করুন" else "Log In"
+    val filterLabel        get() = if (isBn) "🔍 ফিল্টার:" else "🔍 Filter:"
+    val profilePhoto2      get() = if (isBn) "প্রোফাইল ছবি" else "Profile Photo"
+    val uploadFromGallery2 get() = if (isBn) "গ্যালারি থেকে আপলোড" else "Upload from Gallery"
 
-    // Translate stored Bengali key → current language label
-    fun serviceTypeName(bnKey: String): String =
-        if (isBn) bnKey else serviceTypeMap[bnKey] ?: bnKey
+    // Translate stored service type ID → current language label (delegates to ServiceData)
+    fun serviceTypeName(id: String): String = ServiceData.categoryLabel(id)
 
-    // All service types as (bnKey, displayLabel) pairs for chips/selectors
+    // All service types as (id, displayLabel) pairs — used by provider register chips
     val allServiceTypes: List<Pair<String, String>> get() =
         ServiceData.categories.map { it.id to if (isBn) it.bnLabel else it.enLabel }
 
@@ -169,5 +218,16 @@ object AppStrings {
         "professional" -> professionalLabel
         "expert"       -> expertLabel
         else           -> generalLabel
+    }
+
+    // ── Problem type strings ──────────────────────────────────────────────────
+    val normalProblem   get() = if (isBn) "সাধারণ সমস্যা" else "Normal"
+    val advancedProblem get() = if (isBn) "জটিল সমস্যা"   else "Advanced"
+    val criticalProblem get() = if (isBn) "জরুরি সমস্যা"  else "Critical"
+
+    fun problemTypeName(type: String) = when (type) {
+        "advanced" -> advancedProblem
+        "critical" -> criticalProblem
+        else       -> normalProblem
     }
 }

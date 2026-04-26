@@ -6,5 +6,6 @@ data class Job(
     val address: String,
     val phone: String,
     val overview: String = "",
-    var status: String = "pending"
+    var status: String = "pending",
+    val problemType: String = "normal"   // "normal" | "advanced" | "critical"
 )

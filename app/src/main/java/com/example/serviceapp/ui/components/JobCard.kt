@@ -64,17 +64,33 @@ fun JobCard(job: Job, onAccept: () -> Unit, onClick: () -> Unit) {
                     color = AppColors.TextPrimary,
                     modifier = Modifier.weight(1f)
                 )
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = if (isDone) Color(0xFFE8F5E9) else AppColors.PrimaryContainer
-                ) {
-                    Text(
-                        if (isDone) AppStrings.accepted else AppStrings.pending,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (isDone) AppColors.Success else AppColors.Primary,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    // Problem type badge
+                    val (ptColor, ptBg) = when (job.problemType) {
+                        "critical" -> AppColors.Error       to Color(0xFFFFEBEE)
+                        "advanced" -> AppColors.Primary     to AppColors.PrimaryContainer
+                        else       -> Color(0xFF2E7D32)     to Color(0xFFE8F5E9)
+                    }
+                    Surface(shape = RoundedCornerShape(20.dp), color = ptBg) {
+                        Text(
+                            AppStrings.problemTypeName(job.problemType),
+                            fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = ptColor,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                    // Status badge
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (isDone) Color(0xFFE8F5E9) else AppColors.PrimaryContainer
+                    ) {
+                        Text(
+                            if (isDone) AppStrings.accepted else AppStrings.pending,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = if (isDone) AppColors.Success else AppColors.Primary,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
                 }
             }
 
