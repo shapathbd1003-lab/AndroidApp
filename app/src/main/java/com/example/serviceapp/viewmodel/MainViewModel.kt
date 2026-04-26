@@ -92,6 +92,7 @@ class MainViewModel : ViewModel() {
 
     // ── Simulation ───────────────────────────────────────────────────────────
 
+    fun clearHistory()               = FakeRepository.clearHistory()
     fun accept(job: Job)             = FakeRepository.accept(job)
     fun spawnJob()                   = FakeRepository.spawnJob()
     fun applySpeed(fast: Boolean)    = FakeRepository.applySpeed(fast)

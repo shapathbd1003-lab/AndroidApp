@@ -351,7 +351,6 @@ private fun InfoRow(icon: ImageVector, label: String, value: String) {
 }
 
 @Composable
-@Composable
 fun SkillBadge(skillLevel: String) {
     val (icon, color, bgColor) = when (skillLevel) {
         "professional" -> Triple("⚡", Color(0xFF1A237E), Color(0xFFE8EAF6))
