@@ -44,12 +44,13 @@ class MainViewModel : ViewModel() {
         name: String, phone: String, email: String, password: String,
         nid: String, photo: String, baseFee: Double,
         serviceType: String, certificate: String,
+        skillLevel: String = "general",
         onSuccess: () -> Unit
     ) {
         viewModelScope.launch {
             registerLoading = true
             registerError   = ""
-            FakeRepository.register(name, phone, email, password, nid, photo, baseFee, serviceType, certificate).fold(
+            FakeRepository.register(name, phone, email, password, nid, photo, baseFee, serviceType, certificate, skillLevel).fold(
                 onSuccess = { registerLoading = false; onSuccess() },
                 onFailure = { registerLoading = false; registerError = mapError(it) }
             )

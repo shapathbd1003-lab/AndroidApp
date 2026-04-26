@@ -15,5 +15,6 @@ data class Provider(
     var advance: Double = 0.0,
     val history: MutableList<ServiceHistory> = mutableListOf(),
     var certificate: String = "",
-    var isApproved: Boolean? = null   // null = pending, true = approved, false = rejected
+    var isApproved: Boolean? = null,   // null = pending, true = approved, false = rejected
+    var skillLevel: String = "general" // "general" | "professional" | "expert"
 )

@@ -95,13 +95,16 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                 Spacer(Modifier.height(4.dp))
                 if (p.serviceType.isNotBlank()) {
                     Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.2f)) {
-                        Text(AppStrings.serviceTypeName(p.serviceType),
-                            fontSize = 12.sp,
-                            color = Color.White,
+                        Text(
+                            AppStrings.serviceTypeName(p.serviceType),
+                            fontSize = 12.sp, color = Color.White,
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)
                         )
                     }
                 }
+                Spacer(Modifier.height(6.dp))
+                // Skill level badge
+                SkillBadge(p.skillLevel)
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     repeat(5) { i ->
@@ -343,6 +346,31 @@ private fun InfoRow(icon: ImageVector, label: String, value: String) {
         Column {
             Text(label, fontSize = 11.sp, color = AppColors.TextSecondary)
             Text(value, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = AppColors.TextPrimary)
+        }
+    }
+}
+
+@Composable
+@Composable
+fun SkillBadge(skillLevel: String) {
+    val (icon, color, bgColor) = when (skillLevel) {
+        "professional" -> Triple("⚡", Color(0xFF1A237E), Color(0xFFE8EAF6))
+        "expert"       -> Triple("🏆", Color(0xFFE65100), Color(0xFFFFF3E0))
+        else           -> Triple("🔧", Color(0xFF757575), Color(0xFFF5F5F5))
+    }
+    Surface(shape = RoundedCornerShape(20.dp), color = bgColor) {
+        Row(
+            modifier              = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(icon, fontSize = 12.sp)
+            Text(
+                AppStrings.skillLevelName(skillLevel),
+                fontSize   = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color      = color
+            )
         }
     }
 }

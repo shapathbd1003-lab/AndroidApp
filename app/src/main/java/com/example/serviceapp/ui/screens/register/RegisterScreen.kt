@@ -5,6 +5,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -82,6 +83,7 @@ fun RegisterScreen(vm: MainViewModel, nav: NavController) {
     var selectedPhoto   by remember { mutableStateOf(presetAvatars.first()) }
     var selectedService by remember { mutableStateOf("") }
     var certificate     by remember { mutableStateOf("") }
+    var skillLevel      by remember { mutableStateOf("general") }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -278,6 +280,16 @@ fun RegisterScreen(vm: MainViewModel, nav: NavController) {
                 HorizontalDivider(color = Color(0xFFF0F0F0))
                 Spacer(Modifier.height(20.dp))
 
+                // ── Skill level selector ──────────────────────────────────
+                SectionHeader(AppStrings.skillLevelTitle)
+                Text(AppStrings.skillLevelHint, fontSize = 12.sp, color = Color(0xFF9E9E9E))
+                Spacer(Modifier.height(12.dp))
+                SkillLevelSelector(selected = skillLevel, onSelect = { skillLevel = it })
+
+                Spacer(Modifier.height(20.dp))
+                HorizontalDivider(color = Color(0xFFF0F0F0))
+                Spacer(Modifier.height(20.dp))
+
                 SectionHeader(AppStrings.certificateOpt)
                 Spacer(Modifier.height(10.dp))
 
@@ -352,7 +364,8 @@ fun RegisterScreen(vm: MainViewModel, nav: NavController) {
                         if (password.length >= 6 && password == confirmPassword) {
                             vm.registerAsync(
                                 name.trim(), phone.trim(), email.trim(), password,
-                                nid.trim(), selectedPhoto, baseFee, selectedService, certificate
+                                nid.trim(), selectedPhoto, baseFee, selectedService, certificate,
+                                skillLevel
                             ) {
                                 nav.navigate(Screen.Pending.route) {
                                     popUpTo(Screen.Register.route) { inclusive = true }
@@ -387,4 +400,63 @@ fun RegisterScreen(vm: MainViewModel, nav: NavController) {
 @Composable
 private fun SectionHeader(title: String) {
     Text(title, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = AppColors.Primary)
+}
+
+@Composable
+private fun SkillLevelSelector(selected: String, onSelect: (String) -> Unit) {
+    val levels = listOf(
+        Triple("general",      "🔧", AppStrings.generalLabel      to AppStrings.generalDesc),
+        Triple("professional", "⚡", AppStrings.professionalLabel to AppStrings.professionalDesc),
+        Triple("expert",       "🏆", AppStrings.expertLabel       to AppStrings.expertDesc),
+    )
+    val colors = mapOf(
+        "general"      to (Color(0xFF757575) to Color(0xFFF5F5F5)),
+        "professional" to (AppColors.Primary to AppColors.PrimaryContainer),
+        "expert"       to (Color(0xFFE65100) to Color(0xFFFFF3E0)),
+    )
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        levels.forEach { (id, icon, labels) ->
+            val (label, desc) = labels
+            val isSelected    = selected == id
+            val (accent, bg)  = colors[id]!!
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().clickable { onSelect(id) },
+                shape    = RoundedCornerShape(14.dp),
+                color    = if (isSelected) bg else Color(0xFFF9F9F9),
+                border   = if (isSelected)
+                    androidx.compose.foundation.BorderStroke(2.dp, accent)
+                else
+                    androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEEEEEE))
+            ) {
+                Row(
+                    modifier            = Modifier.padding(14.dp),
+                    verticalAlignment   = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Box(
+                        modifier          = Modifier
+                            .size(44.dp)
+                            .background(if (isSelected) accent.copy(alpha = 0.15f) else Color(0xFFF0F0F0), RoundedCornerShape(12.dp)),
+                        contentAlignment  = Alignment.Center
+                    ) {
+                        Text(icon, fontSize = 20.sp)
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text(label, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (isSelected) accent else Color(0xFF212121))
+                        Text(desc, fontSize = 12.sp, color = Color(0xFF757575), modifier = Modifier.padding(top = 2.dp))
+                    }
+                    if (isSelected) {
+                        Box(
+                            modifier         = Modifier.size(20.dp).background(accent, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("✓", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
