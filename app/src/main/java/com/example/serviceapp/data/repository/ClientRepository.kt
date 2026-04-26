@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.serviceapp.data.model.Client
 import com.example.serviceapp.data.model.ServiceRequest
+import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.utils.NotificationHelper
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
@@ -197,7 +198,7 @@ object ClientRepository {
                         notifiedRequests.add(rid)
                         NotificationHelper.showProviderFoundNotification(
                             providerName = doc.getString("providerName") ?: "মিস্ত্রি",
-                            serviceType  = doc.getString("serviceType")  ?: "",
+                            serviceType  = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
                             baseFee      = doc.getDouble("providerBaseFee") ?: 0.0,
                             rating       = doc.getDouble("providerRating")  ?: 0.0
                         )

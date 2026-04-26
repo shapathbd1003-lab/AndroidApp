@@ -192,23 +192,10 @@ object AppStrings {
     val profilePhoto2      get() = if (isBn) "প্রোফাইল ছবি" else "Profile Photo"
     val uploadFromGallery2 get() = if (isBn) "গ্যালারি থেকে আপলোড" else "Upload from Gallery"
 
-    // ── Service type translations ────────────────────────────────────────────
-    private val serviceTypeMap = mapOf(
-        "এসি রিপেয়ার"       to "AC Repair",
-        "প্লাম্বিং"          to "Plumbing",
-        "ইলেকট্রিক কাজ"      to "Electrical Work",
-        "ডিপ ক্লিনিং"        to "Deep Cleaning",
-        "রং করা"             to "Painting",
-        "কাঠের কাজ"          to "Carpentry",
-        "যন্ত্রপাতি মেরামত"  to "Appliance Repair",
-        "পোকামাকড় নিয়ন্ত্রণ" to "Pest Control"
-    )
+    // Translate stored service type ID → current language label (delegates to ServiceData)
+    fun serviceTypeName(id: String): String = ServiceData.categoryLabel(id)
 
-    // Translate stored Bengali key → current language label
-    fun serviceTypeName(bnKey: String): String =
-        if (isBn) bnKey else serviceTypeMap[bnKey] ?: bnKey
-
-    // All service types as (bnKey, displayLabel) pairs for chips/selectors
+    // All service types as (id, displayLabel) pairs — used by provider register chips
     val allServiceTypes: List<Pair<String, String>> get() =
-        serviceTypeMap.entries.map { (k, v) -> k to if (isBn) k else v }
+        ServiceData.categories.map { it.id to if (isBn) it.bnLabel else it.enLabel }
 }

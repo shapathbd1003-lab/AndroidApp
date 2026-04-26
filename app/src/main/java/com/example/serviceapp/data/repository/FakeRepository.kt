@@ -1,4 +1,4 @@
-package com.example.serviceapp.data.repository
+﻿package com.example.serviceapp.data.repository
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -7,6 +7,8 @@ import androidx.compose.runtime.setValue
 import com.example.serviceapp.data.model.Job
 import com.example.serviceapp.data.model.Provider
 import com.example.serviceapp.data.model.ServiceHistory
+import com.example.serviceapp.utils.AppStrings
+import com.example.serviceapp.utils.ServiceData
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -32,67 +34,21 @@ object FakeRepository {
     private val db:   FirebaseFirestore get() = FirebaseFirestore.getInstance()
     private var loopJob: CoroutineJob?  = null
 
-    val serviceTypes = listOf(
-        "এসি রিপেয়ার", "প্লাম্বিং", "ইলেকট্রিক কাজ",
-        "ডিপ ক্লিনিং", "রং করা", "কাঠের কাজ",
-        "যন্ত্রপাতি মেরামত", "পোকামাকড় নিয়ন্ত্রণ"
-    )
+    // Service type IDs — match ServiceData.categories
+    val serviceTypes get() = ServiceData.categories.map { it.id }
 
     private val areas = listOf(
         "মিরপুর ১", "মিরপুর ১০", "মিরপুর ১২", "ধানমন্ডি",
         "গুলশান ১", "গুলশান ২", "বনানী", "উত্তরা", "মোহাম্মদপুর", "রামপুরা"
     )
 
-    private val problemOverviews = mapOf(
-        "এসি রিপেয়ার" to listOf(
-            "এসি চালু থাকলেও ঠান্ডা হচ্ছে না। আউটডোর কম্প্রেসার ঠিক আছে কিন্তু ইনডোর থেকে গরম বাতাস বেরোচ্ছে।",
-            "গতকাল সন্ধ্যা থেকে আউটডোর ইউনিট থেকে অস্বাভাবিক শব্দ হচ্ছে। কম্পন বাড়ছে।",
-            "ইনডোর ইউনিট থেকে মেঝেতে পানি পড়ছে। ড্রেন লাইন বন্ধ হয়ে থাকতে পারে।",
-            "এসি চালু হওয়ার ১০ মিনিট পরেই বন্ধ হয়ে যাচ্ছে।"
-        ),
-        "প্লাম্বিং" to listOf(
-            "রান্নাঘরের সিঙ্কের ড্রেন পুরোপুরি বন্ধ। পানি জমে আছে, নামছে না।",
-            "বাথরুমের ট্যাপ সম্পূর্ণ বন্ধ করলেও পানি পড়ছে।",
-            "সকাল থেকে সব ট্যাপে পানির চাপ খুব কম। শাওয়ার প্রায় কাজ করছে না।",
-            "টয়লেটের ফ্লাশ ঠিকমতো কাজ করছে না।"
-        ),
-        "ইলেকট্রিক কাজ" to listOf(
-            "প্রতি ঘণ্টায় মেইন সার্কিট ব্রেকার পড়ে যাচ্ছে।",
-            "দুটি পাওয়ার সকেটে প্লাগ লাগালে স্ফুলিঙ্গ দেখা যাচ্ছে।",
-            "সিলিং ফ্যানের স্পিড কন্ট্রোল কাজ করছে না।",
-            "মাস্টার বেডরুমে লাইট জ্বলছে-নিভছে।"
-        ),
-        "ডিপ ক্লিনিং" to listOf(
-            "নতুন ভাড়াটে আসার আগে পুরো ফ্ল্যাট ডিপ ক্লিন দরকার।",
-            "রান্নাঘরের এক্সজস্ট ফ্যান ও দেয়ালে মোটা তেলের আস্তর জমেছে।",
-            "বাথরুমের টাইলসে গাঢ় ছাতা ও ময়লা জমেছে।",
-            "নির্মাণ কাজের পর পরিষ্কার দরকার।"
-        ),
-        "রং করা" to listOf(
-            "২টি বেডরুমের দেয়ালের রং উঠে যাচ্ছে। স্যান্ডিং করে নতুন কোট দরকার।",
-            "বাইরের সীমানা প্রাচীরে বড় ফাটল ও রং বিবর্ণ হয়ে গেছে।",
-            "লিভিং রুমের একটি দেয়াল নতুন রং করতে হবে।",
-            "ছাদ থেকে পানি চুঁয়ে ডাইনিং রুমের ছাদে দাগ পড়েছে।"
-        ),
-        "কাঠের কাজ" to listOf(
-            "মাস্টার বেডরুমের দরজার কব্জা ভাঙা।",
-            "রান্নাঘরের ক্যাবিনেটের তাক বাসনের ভারে বেঁকে গেছে।",
-            "তিনটি কাঠের মেঝের পাটাতন জোরে শব্দ করছে।",
-            "জানালার ফ্রেম পানিতে পচে গেছে।"
-        ),
-        "যন্ত্রপাতি মেরামত" to listOf(
-            "ওয়াশিং মেশিন স্পিন সাইকেলে তীব্র শব্দ করছে।",
-            "ফ্রিজ ঠান্ডা রাখতে পারছে না। খাবার নষ্ট হয়ে যাচ্ছে।",
-            "মাইক্রোওয়েভ চালু করলে ভেতরে স্ফুলিঙ্গ দেখা যাচ্ছে।",
-            "ডিশওয়াশার থেকে পানি বের হচ্ছে।"
-        ),
-        "পোকামাকড় নিয়ন্ত্রণ" to listOf(
-            "রান্নাঘরে দিনের বেলায়ও তেলাপোকা দেখা যাচ্ছে।",
-            "কাঠের বুকশেলফ ও দরজার ফ্রেমে উইপোকার ক্ষতি পাওয়া গেছে।",
-            "খাবার রাখার জায়গার কাছে ইঁদুর দেখা গেছে।",
-            "ছাদে জমে থাকা পানিতে মশার বংশ বিস্তার হচ্ছে।"
-        )
-    )
+    // Problem overviews derived from ServiceData — keyed by category ID
+    private val problemOverviews: Map<String, List<String>> get() =
+        ServiceData.categories.associate { cat ->
+            cat.id to cat.problems
+                .filter { !it.isWarning }  // skip warning items for auto-generation
+                .map { it.bnLabel }
+        }
 
     // ── Register ─────────────────────────────────────────────────────────────
     suspend fun register(
@@ -213,11 +169,12 @@ object FakeRepository {
 
     fun spawnJob() {
         totalGenerated++
-        val type     = provider?.serviceType?.takeIf { it.isNotBlank() } ?: serviceTypes.random()
-        val overview = problemOverviews[type]?.random() ?: "সেবা প্রয়োজন।"
+        val typeId   = provider?.serviceType?.takeIf { it.isNotBlank() } ?: serviceTypes.random()
+        val typeName = AppStrings.serviceTypeName(typeId)
+        val overview = problemOverviews[typeId]?.randomOrNull() ?: "সেবা প্রয়োজন।"
         jobs.add(Job(
             id          = UUID.randomUUID().toString(),
-            description = "$type #$totalGenerated",
+            description = "$typeName #$totalGenerated",
             address     = areas.random(),
             phone       = "01${(500000000..999999999).random()}",
             overview    = overview
