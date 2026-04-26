@@ -92,19 +92,18 @@ fun DashboardScreen(vm: MainViewModel) {
                     Column(Modifier.weight(1f)) {
                         Text(AppStrings.welcomeBack, fontSize = 13.sp, color = Color.White.copy(alpha = 0.8f))
                         Text(p.name, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                        if (p.serviceType.isNotBlank()) {
-                            Spacer(Modifier.height(4.dp))
-                            Surface(
-                                shape = RoundedCornerShape(20.dp),
-                                color = Color.White.copy(alpha = 0.2f)
-                            ) {
-                                Text(
-                                    p.serviceType,
-                                    fontSize = 11.sp,
-                                    color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
-                                )
+                        Spacer(Modifier.height(4.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            if (p.serviceType.isNotBlank()) {
+                                Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.2f)) {
+                                    Text(
+                                        AppStrings.serviceTypeName(p.serviceType),
+                                        fontSize = 10.sp, color = Color.White,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                                    )
+                                }
                             }
+                            com.example.serviceapp.ui.screens.profile.SkillBadge(p.skillLevel)
                         }
                     }
                     // Availability dot indicator

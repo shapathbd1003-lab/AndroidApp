@@ -54,7 +54,8 @@ object FakeRepository {
     suspend fun register(
         name: String, phone: String, email: String, password: String,
         nid: String, photo: String, baseFee: Double,
-        serviceType: String, certificate: String
+        serviceType: String, certificate: String,
+        skillLevel: String = "general"
     ): Result<Unit> = runCatching {
         val result = auth.createUserWithEmailAndPassword(email.trim(), password).await()
         val uid    = result.user?.uid ?: error("No user ID returned")
@@ -70,6 +71,7 @@ object FakeRepository {
             "certificate"  to "",
             "availability" to "available",
             "rating"       to 4.5,
+            "skillLevel"   to skillLevel,
             "isApproved"   to null,
             "createdAt"    to FieldValue.serverTimestamp()
         )
@@ -80,7 +82,8 @@ object FakeRepository {
             email = email.trim(), photo = photo,
             nid = nid.trim(), baseFee = baseFee,
             serviceType = serviceType, certificate = certificate,
-            isApproved = null  // pending until admin approves
+            skillLevel = skillLevel,
+            isApproved = null
         )
         loggedIn = true
         // Do NOT start loop — wait for approval
@@ -120,6 +123,7 @@ object FakeRepository {
             certificate  = doc.getString("certificate")  ?: "",
             availability = doc.getString("availability") ?: "available",
             rating       = doc.getDouble("rating")       ?: 4.5,
+            skillLevel   = doc.getString("skillLevel")   ?: "general",
             isApproved   = if (approvedRaw == null) null else approvedRaw as? Boolean
         )
     }

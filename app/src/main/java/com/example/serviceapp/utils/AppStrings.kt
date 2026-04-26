@@ -198,4 +198,25 @@ object AppStrings {
     // All service types as (id, displayLabel) pairs — used by provider register chips
     val allServiceTypes: List<Pair<String, String>> get() =
         ServiceData.categories.map { it.id to if (isBn) it.bnLabel else it.enLabel }
+
+    // ── Skill level strings ──────────────────────────────────────────────────
+    val skillLevelTitle    get() = if (isBn) "দক্ষতার স্তর" else "Skill Level"
+    val skillLevelHint     get() = if (isBn) "আপনার অভিজ্ঞতা অনুযায়ী বেছে নিন" else "Choose based on your experience"
+
+    val generalLabel       get() = if (isBn) "সাধারণ"    else "General"
+    val professionalLabel  get() = if (isBn) "পেশাদার"   else "Professional"
+    val expertLabel        get() = if (isBn) "বিশেষজ্ঞ"  else "Expert"
+
+    val generalDesc        get() = if (isBn) "নতুন বা কম অভিজ্ঞ। মৌলিক কাজে পারদর্শী।"
+                                   else "New or less experienced. Handles basic tasks."
+    val professionalDesc   get() = if (isBn) "অভিজ্ঞ ও দক্ষ। বিভিন্ন ধরনের কাজ করতে পারেন।"
+                                   else "Experienced & skilled. Handles diverse jobs."
+    val expertDesc         get() = if (isBn) "অত্যন্ত অভিজ্ঞ। জটিল কাজেও দক্ষ।"
+                                   else "Highly experienced. Expert in complex work."
+
+    fun skillLevelName(level: String) = when (level) {
+        "professional" -> professionalLabel
+        "expert"       -> expertLabel
+        else           -> generalLabel
+    }
 }
