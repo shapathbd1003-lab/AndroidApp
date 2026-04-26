@@ -174,14 +174,24 @@ object FakeRepository {
     fun spawnJob() {
         totalGenerated++
         val typeId   = provider?.serviceType?.takeIf { it.isNotBlank() } ?: serviceTypes.random()
-        val typeName = AppStrings.serviceTypeName(typeId)
-        val overview = problemOverviews[typeId]?.randomOrNull() ?: "সেবা প্রয়োজন।"
+        val skill    = provider?.skillLevel ?: "general"
+        val allowed  = ServiceData.allowedTypes(skill)
+
+        val cat      = ServiceData.categoryById(typeId)
+        val eligible = cat?.problems?.filter { it.problemType in allowed && !it.isWarning } ?: emptyList()
+        val problem  = eligible.randomOrNull()
+
+        val overview    = problem?.bnLabel ?: "সেবা প্রয়োজন।"
+        val problemType = problem?.problemType ?: "normal"
+        val typeName    = AppStrings.serviceTypeName(typeId)
+
         jobs.add(Job(
             id          = UUID.randomUUID().toString(),
             description = "$typeName #$totalGenerated",
             address     = areas.random(),
             phone       = "01${(500000000..999999999).random()}",
-            overview    = overview
+            overview    = overview,
+            problemType = problemType
         ))
         if (jobs.size > 6) jobs.removeFirst()
     }

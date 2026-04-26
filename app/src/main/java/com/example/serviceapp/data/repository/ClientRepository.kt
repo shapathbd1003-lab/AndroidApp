@@ -82,7 +82,8 @@ object ClientRepository {
     // ── Create request ────────────────────────────────────────────────────────
     suspend fun createRequest(
         serviceType: String, description: String, address: String,
-        minRating: Double = 0.0, maxPrice: Double = 0.0
+        minRating: Double = 0.0, maxPrice: Double = 0.0,
+        problemType: String = "normal"
     ): Result<String> = runCatching {
         val c   = client ?: error("Not logged in")
         val rid = UUID.randomUUID().toString()
@@ -97,6 +98,7 @@ object ClientRepository {
             "status"         to "pending",
             "minRating"      to minRating,
             "maxPrice"       to maxPrice,
+            "problemType"    to problemType,
             "providerId"     to "",
             "providerName"   to "",
             "providerPhone"  to "",
@@ -225,7 +227,8 @@ object ClientRepository {
                         providerRating  = doc.getDouble("providerRating") ?: 0.0,
                         providerBaseFee = doc.getDouble("providerBaseFee") ?: 0.0,
                         rating          = (doc.getLong("rating")  ?: 0).toInt(),
-                        reviewComment   = doc.getString("reviewComment")  ?: ""
+                        reviewComment   = doc.getString("reviewComment")  ?: "",
+                        problemType     = doc.getString("problemType")    ?: "normal"
                     ))
                 }
             }

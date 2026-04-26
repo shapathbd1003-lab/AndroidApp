@@ -120,7 +120,20 @@ private fun RequestCard(req: ServiceRequest, onClick: () -> Unit) {
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(AppStrings.serviceTypeName(req.serviceType), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1A237E))
+                Column(Modifier.weight(1f)) {
+                    Text(AppStrings.serviceTypeName(req.serviceType), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1A237E))
+                    // Problem type badge
+                    val (ptColor, ptBg) = when (req.problemType) {
+                        "critical" -> Color(0xFFC62828) to Color(0xFFFFEBEE)
+                        "advanced" -> Color(0xFF1A237E) to Color(0xFFE8EAF6)
+                        else       -> Color(0xFF2E7D32) to Color(0xFFE8F5E9)
+                    }
+                    Spacer(Modifier.height(3.dp))
+                    Surface(shape = RoundedCornerShape(20.dp), color = ptBg, modifier = Modifier) {
+                        Text(AppStrings.problemTypeName(req.problemType), fontSize = 10.sp, color = ptColor, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+                    }
+                }
+                Spacer(Modifier.width(8.dp))
                 Surface(shape = RoundedCornerShape(20.dp), color = statusColor.copy(alpha = 0.12f)) {
                     Text(statusLabel, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = statusColor, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp))
                 }

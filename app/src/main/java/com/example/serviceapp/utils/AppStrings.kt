@@ -219,4 +219,15 @@ object AppStrings {
         "expert"       -> expertLabel
         else           -> generalLabel
     }
+
+    // ── Problem type strings ──────────────────────────────────────────────────
+    val normalProblem   get() = if (isBn) "সাধারণ সমস্যা" else "Normal"
+    val advancedProblem get() = if (isBn) "জটিল সমস্যা"   else "Advanced"
+    val criticalProblem get() = if (isBn) "জরুরি সমস্যা"  else "Critical"
+
+    fun problemTypeName(type: String) = when (type) {
+        "advanced" -> advancedProblem
+        "critical" -> criticalProblem
+        else       -> normalProblem
+    }
 }

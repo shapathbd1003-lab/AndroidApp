@@ -49,6 +49,7 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
     var minRating          by remember { mutableStateOf(0.0) }
     var maxPrice           by remember { mutableStateOf(0.0) }
     var locationLoading    by remember { mutableStateOf(false) }
+    var selectedProblemType by remember { mutableStateOf("normal") }
 
     val context  = LocalContext.current
     val scope    = rememberCoroutineScope()
@@ -174,7 +175,8 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                                     FilterChip(
                                         selected = isSelPrb,
                                         onClick  = {
-                                            selectedProblem = label
+                                            selectedProblem     = label
+                                            selectedProblemType = prob.problemType
                                             description = if (isBn) prob.bnLabel else prob.enLabel
                                         },
                                         label = {
@@ -294,7 +296,7 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
         Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp)) {
             Button(
                 onClick = {
-                    vm.createRequest(selectedCategoryId, description.trim(), address.trim(), minRating, maxPrice) {
+                    vm.createRequest(selectedCategoryId, description.trim(), address.trim(), minRating, maxPrice, selectedProblemType) {
                         nav.navigate(Screen.ClientDashboard.route) {
                             popUpTo(Screen.ClientDashboard.route) { inclusive = true }
                         }
