@@ -166,7 +166,7 @@ fun DashboardScreen(vm: MainViewModel) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 InfoTile(Modifier.weight(1f), AppStrings.liveJobs, "$pendingJobs", AppColors.PrimaryContainer, AppColors.Primary)
                 InfoTile(Modifier.weight(1f), AppStrings.completed, "$completedJobs", Color(0xFFE8F5E9), AppColors.Success)
-                InfoTile(Modifier.weight(1f), AppStrings.generated, "${vm.totalGenerated}", Color(0xFFF3E5F5), Color(0xFF6A1B9A))
+                InfoTile(Modifier.weight(1f), AppStrings.jobs, "${vm.provider?.history?.size ?: 0}", Color(0xFFF3E5F5), Color(0xFF6A1B9A))
             }
 
             if (p.history.isNotEmpty()) {
