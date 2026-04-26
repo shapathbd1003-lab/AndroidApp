@@ -42,14 +42,13 @@ private fun priceLabel(v: Double)  = if (v == 0.0) AppStrings.anyFilter else "�
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
-    var selectedCategoryId by remember { mutableStateOf("") }
-    var selectedProblem    by remember { mutableStateOf("") }
-    var description        by remember { mutableStateOf("") }
-    var address            by remember { mutableStateOf("") }
-    var minRating          by remember { mutableStateOf(0.0) }
-    var maxPrice           by remember { mutableStateOf(0.0) }
-    var locationLoading    by remember { mutableStateOf(false) }
-    var selectedProblemType by remember { mutableStateOf("normal") }
+    var selectedCategoryId  by remember { mutableStateOf("") }
+    var selectedProblems    by remember { mutableStateOf(setOf<String>()) }  // multiple
+    var customNote          by remember { mutableStateOf("") }  // "add more" text
+    var address             by remember { mutableStateOf("") }
+    var minRating           by remember { mutableStateOf(0.0) }
+    var maxPrice            by remember { mutableStateOf(0.0) }
+    var locationLoading     by remember { mutableStateOf(false) }
 
     val context  = LocalContext.current
     val scope    = rememberCoroutineScope()
@@ -57,7 +56,26 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
     val isBn     = AppStrings.lang == AppLanguage.BN
 
     val selectedCategory = ServiceData.categoryById(selectedCategoryId)
-    val canSubmit = selectedCategoryId.isNotEmpty() && description.isNotBlank() && address.isNotBlank()
+
+    // Highest severity problem type among selected problems
+    val selectedProblemType = remember(selectedProblems, selectedCategoryId) {
+        val types = selectedCategory?.problems
+            ?.filter { p -> selectedProblems.contains(if (isBn) p.bnLabel else p.enLabel) }
+            ?.map { it.problemType } ?: emptyList()
+        when {
+            "critical" in types -> "critical"
+            "advanced" in types -> "advanced"
+            else                -> "normal"
+        }
+    }
+
+    // Combined description from selected problems + custom note
+    val description = remember(selectedProblems, customNote) {
+        val parts = selectedProblems.toList() + if (customNote.isNotBlank()) listOf(customNote) else emptyList()
+        parts.joinToString(", ")
+    }
+
+    val canSubmit = selectedCategoryId.isNotEmpty() && selectedProblems.isNotEmpty() && address.isNotBlank()
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = purple, focusedLabelColor = purple, cursorColor = purple
@@ -122,8 +140,8 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                                 Surface(
                                     modifier = Modifier.weight(1f).clickable {
                                         selectedCategoryId = cat.id
-                                        selectedProblem   = ""
-                                        description       = ""
+                                        selectedProblems   = emptySet()
+                                        customNote         = ""
                                     },
                                     shape  = RoundedCornerShape(12.dp),
                                     color  = if (isSelected) purple else Color(0xFFF3E5F5),
@@ -154,7 +172,7 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                 }
             }
 
-            // ── STEP 2: Problem ──────────────────────────────────────────────
+            // ── STEP 2: Problem (multi-select) ───────────────────────────────
             AnimatedVisibility(visible = selectedCategory != null, enter = expandVertically(), exit = shrinkVertically()) {
                 selectedCategory?.let { cat ->
                     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(2.dp)) {
@@ -162,22 +180,30 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text("2", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White,
                                     modifier = Modifier.background(purple, RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 2.dp))
-                                Text(
-                                    if (isBn) "সমস্যা বেছে নিন — ${cat.icon} ${cat.bnLabel}" else "Select Problem — ${cat.icon} ${cat.enLabel}",
-                                    fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242)
-                                )
+                                Column {
+                                    Text(
+                                        if (isBn) "সমস্যা বেছে নিন — ${cat.icon} ${cat.bnLabel}" else "Select Problems — ${cat.icon} ${cat.enLabel}",
+                                        fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242)
+                                    )
+                                    Text(
+                                        if (isBn) "একাধিক সমস্যা বেছে নিতে পারেন" else "You can select multiple problems",
+                                        fontSize = 11.sp, color = Color(0xFF9E9E9E)
+                                    )
+                                }
                             }
                             Spacer(Modifier.height(12.dp))
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 cat.problems.forEach { prob ->
                                     val label    = if (isBn) prob.bnLabel else prob.enLabel
-                                    val isSelPrb = selectedProblem == label
+                                    val isSelPrb = selectedProblems.contains(label)
                                     FilterChip(
                                         selected = isSelPrb,
                                         onClick  = {
-                                            selectedProblem     = label
-                                            selectedProblemType = prob.problemType
-                                            description = if (isBn) prob.bnLabel else prob.enLabel
+                                            // Toggle selection
+                                            selectedProblems = if (isSelPrb)
+                                                selectedProblems - label
+                                            else
+                                                selectedProblems + label
                                         },
                                         label = {
                                             Text(
@@ -193,38 +219,31 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                                     )
                                 }
                             }
+                            // "Add more" custom note field
+                            if (selectedProblems.isNotEmpty()) {
+                                Spacer(Modifier.height(10.dp))
+                                OutlinedTextField(
+                                    value = customNote,
+                                    onValueChange = { customNote = it },
+                                    placeholder = { Text(if (isBn) "+ আরও কিছু যোগ করুন (ঐচ্ছিক)" else "+ Add more details (optional)", color = Color(0xFFBDBDBD)) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = fieldColors,
+                                    singleLine = true
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            // ── STEP 3: Description ──────────────────────────────────────────
-            AnimatedVisibility(visible = selectedCategoryId.isNotEmpty(), enter = expandVertically(), exit = shrinkVertically()) {
-                Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(2.dp)) {
-                    Column(Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("3", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White,
-                                modifier = Modifier.background(purple, RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 2.dp))
-                            Text(AppStrings.problemDescLabel, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242))
-                        }
-                        Spacer(Modifier.height(10.dp))
-                        OutlinedTextField(
-                            value = description, onValueChange = { description = it },
-                            placeholder = { Text(AppStrings.problemDescHint, color = Color(0xFFBDBDBD)) },
-                            modifier = Modifier.fillMaxWidth().height(110.dp),
-                            shape = RoundedCornerShape(12.dp), colors = fieldColors, maxLines = 5
-                        )
-                    }
-                }
-            }
-
-            // ── STEP 4: Address ──────────────────────────────────────────────
+            // ── STEP 3: Address ──────────────────────────────────────────────
             AnimatedVisibility(visible = selectedCategoryId.isNotEmpty(), enter = expandVertically(), exit = shrinkVertically()) {
                 Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(2.dp)) {
                     Column(Modifier.padding(16.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text("4", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White,
+                                Text("3", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White,
                                     modifier = Modifier.background(purple, RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 2.dp))
                                 Text(AppStrings.addressLabel, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242))
                             }

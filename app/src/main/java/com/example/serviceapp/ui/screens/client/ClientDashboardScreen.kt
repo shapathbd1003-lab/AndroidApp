@@ -108,7 +108,6 @@ private fun RequestCard(req: ServiceRequest, onClick: () -> Unit) {
         "accepted"          -> Color(0xFF1565C0) to "✅ মিস্ত্রি নিশ্চিত"
         "completed"         -> Color(0xFF2E7D32) to "☑️ সম্পন্ন"
         "cancelled"         -> Color(0xFF757575) to "❌ বাতিল"
-        "no_provider"       -> Color(0xFFE65100) to "😔 মিস্ত্রি পাওয়া যায়নি"
         else                -> Color(0xFFE65100) to "⏳ অপেক্ষমান..."
     }
 

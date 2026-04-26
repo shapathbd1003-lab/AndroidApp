@@ -221,6 +221,8 @@ object AppStrings {
     }
 
     // ── Problem type strings ──────────────────────────────────────────────────
+    val waitingForProvider get() = if (isBn) "মিস্ত্রির জন্য অপেক্ষা করছেন..." else "Waiting for a provider..."
+
     val normalProblem   get() = if (isBn) "সাধারণ সমস্যা" else "Normal"
     val advancedProblem get() = if (isBn) "জটিল সমস্যা"   else "Advanced"
     val criticalProblem get() = if (isBn) "জরুরি সমস্যা"  else "Critical"

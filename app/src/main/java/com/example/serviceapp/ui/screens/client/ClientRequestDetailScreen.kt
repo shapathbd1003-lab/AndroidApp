@@ -140,8 +140,7 @@ private fun StatusCard(req: ServiceRequest) {
         "accepted"          -> listOf(Color(0xFFE3F2FD), Color(0xFF1565C0), "🔧", "মিস্ত্রি নিশ্চিত — কাজ শুরু হচ্ছে!")
         "completed"         -> listOf(Color(0xFFE8F5E9), Color(0xFF2E7D32), "☑️", "কাজ সম্পন্ন!")
         "cancelled"         -> listOf(Color(0xFFFFEBEE), Color(0xFFC62828), "❌", "অনুরোধ বাতিল হয়েছে")
-        "no_provider"       -> listOf(Color(0xFFFFF3E0), Color(0xFFE65100), "😔", "আপনার ফিল্টারে কোনো মিস্ত্রি পাওয়া যায়নি")
-        else                -> listOf(Color(0xFFFFF8E1), Color(0xFFE65100), "⏳", "মিস্ত্রি খোঁজা হচ্ছে (১৫–২৫ সেকেন্ড)...")
+        else                -> listOf(Color(0xFFFFF8E1), Color(0xFFE65100), "⏳", AppStrings.waitingForProvider)
     }
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = bg as Color)) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {

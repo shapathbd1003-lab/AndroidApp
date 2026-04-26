@@ -14,12 +14,10 @@ import kotlinx.coroutines.launch
 
 class MainViewModel : ViewModel() {
 
-    val provider       get() = FakeRepository.provider
-    val jobs           get() = FakeRepository.jobs
-    val totalGenerated get() = FakeRepository.totalGenerated
-    val fastMode       get() = FakeRepository.fastMode
-    val loggedIn       get() = FakeRepository.loggedIn
-    val serviceTypes   get() = FakeRepository.serviceTypes
+    val provider     get() = FakeRepository.provider
+    val jobs         get() = FakeRepository.jobs
+    val loggedIn     get() = FakeRepository.loggedIn
+    val serviceTypes get() = FakeRepository.serviceTypes
 
     var loginLoading   by mutableStateOf(false); private set
     var loginError     by mutableStateOf(""); private set
@@ -92,11 +90,9 @@ class MainViewModel : ViewModel() {
 
     // ── Simulation ───────────────────────────────────────────────────────────
 
-    fun clearHistory()               = FakeRepository.clearHistory()
-    fun accept(job: Job)             = FakeRepository.accept(job)
-    fun spawnJob()                   = FakeRepository.spawnJob()
-    fun applySpeed(fast: Boolean)    = FakeRepository.applySpeed(fast)
-    fun setAvailability(s: String)   = FakeRepository.setAvailability(s)
+    fun clearHistory()             = FakeRepository.clearHistory()
+    fun accept(job: Job)           = FakeRepository.accept(job)
+    fun setAvailability(s: String) = FakeRepository.setAvailability(s)
 
     // ── Language ─────────────────────────────────────────────────────────────
 

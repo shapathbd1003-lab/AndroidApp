@@ -14,7 +14,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
@@ -27,20 +26,6 @@ object ClientRepository {
 
     private val auth: FirebaseAuth      get() = FirebaseAuth.getInstance()
     private val db:   FirebaseFirestore get() = FirebaseFirestore.getInstance()
-
-    private data class FakeProvider(
-        val name: String, val phone: String, val id: String,
-        val rating: Double, val baseFee: Double
-    )
-
-    private val fakeProviders = listOf(
-        FakeProvider("রাকিব হোসেন",  "01712345678", "p_001", 4.5, 500.0),
-        FakeProvider("মো. করিম",     "01812345678", "p_002", 4.2, 350.0),
-        FakeProvider("ফারহান আহমেদ", "01912345678", "p_003", 4.8, 400.0),
-        FakeProvider("তানভীর ইসলাম", "01512345678", "p_005", 3.9, 450.0),
-        FakeProvider("সুমাইয়া বেগম", "01612345678", "p_004", 4.0, 600.0),
-        FakeProvider("নুসরাত জাহান", "01312345678", "p_006", 4.6, 550.0),
-    )
 
     // ── Register ──────────────────────────────────────────────────────────────
     suspend fun register(
@@ -108,31 +93,6 @@ object ClientRepository {
             "reviewComment"  to "",
             "createdAt"      to FieldValue.serverTimestamp()
         )).await()
-
-        // Fake provider matches after 15–25 seconds
-        CoroutineScope(Dispatchers.IO).launch {
-            delay((15_000L..25_000L).random())
-
-            val eligible = fakeProviders.filter { p ->
-                (minRating == 0.0 || p.rating >= minRating) &&
-                (maxPrice  == 0.0 || p.baseFee <= maxPrice)
-            }
-
-            if (eligible.isEmpty()) {
-                db.collection("requests").document(rid).update(mapOf("status" to "no_provider")).await()
-                return@launch
-            }
-
-            db.collection("requests").document(rid).update(mapOf(
-                "status"          to "awaiting_approval",
-                "providerId"      to eligible.random().id,
-                "providerName"    to eligible.random().name,
-                "providerPhone"   to eligible.random().phone,
-                "providerRating"  to eligible.random().rating,
-                "providerBaseFee" to eligible.random().baseFee,
-                "matchedAt"       to FieldValue.serverTimestamp()
-            )).await()
-        }
         rid
     }
 
