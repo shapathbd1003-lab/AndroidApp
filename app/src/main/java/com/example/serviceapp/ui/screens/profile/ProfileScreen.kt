@@ -1,4 +1,4 @@
-﻿package com.example.serviceapp.ui.screens.profile
+package com.example.serviceapp.ui.screens.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -36,6 +37,12 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,11 +59,39 @@ import com.example.serviceapp.ui.theme.AppColors
 import com.example.serviceapp.utils.AppLanguage
 import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.viewmodel.MainViewModel
+import com.google.firebase.firestore.FirebaseFirestore
+
+private data class ReviewItem(
+    val clientName: String,
+    val serviceType: String,
+    val rating: Int,
+    val comment: String
+)
 
 @Composable
 fun ProfileScreen(vm: MainViewModel, nav: NavController) {
 
     val p = vm.provider ?: return
+
+    val reviews             = remember { mutableStateListOf<ReviewItem>() }
+    var showDeleteConfirm  by remember { mutableStateOf(false) }
+    LaunchedEffect(p.id) {
+        FirebaseFirestore.getInstance()
+            .collection("reviews")
+            .whereEqualTo("providerId", p.id)
+            .get()
+            .addOnSuccessListener { snaps ->
+                reviews.clear()
+                snaps.documents.forEach { doc ->
+                    reviews.add(ReviewItem(
+                        clientName  = doc.getString("clientName")  ?: "গ্রাহক",
+                        serviceType = doc.getString("serviceType") ?: "",
+                        rating      = (doc.getLong("rating") ?: 0).toInt(),
+                        comment     = doc.getString("comment")     ?: ""
+                    ))
+                }
+            }
+    }
 
     val availabilityOptions = listOf("available", "working", "unavailable")
     val availabilityLabels = mapOf(
@@ -131,16 +166,20 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                         Surface(
                             shape = RoundedCornerShape(20.dp),
                             color = if (isSelected) Color.White else Color.White.copy(alpha = 0.15f),
-                            modifier = Modifier.weight(1f).clickable { vm.setAvailability(opt) }
+                            modifier = Modifier
+                                .weight(1f)
+                                .defaultMinSize(minHeight = 40.dp)
+                                .clickable { vm.setAvailability(opt) }
                         ) {
-                            Text(
-                                availabilityLabels[opt] ?: opt,
-                                fontSize = 10.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) availabilityColors[opt] ?: AppColors.Primary else Color.White,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp)) {
+                                Text(
+                                    availabilityLabels[opt] ?: opt,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) availabilityColors[opt] ?: AppColors.Primary else Color.White,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                            }
                         }
                     }
                 }
@@ -282,7 +321,22 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                 Spacer(Modifier.height(20.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(AppStrings.serviceHistory, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
-                    Text("${p.history.size} ${AppStrings.jobs}", fontSize = 12.sp, color = AppColors.TextSecondary)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("${p.history.size} ${AppStrings.jobs}", fontSize = 12.sp, color = AppColors.TextSecondary)
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = AppColors.Error.copy(alpha = 0.1f),
+                            modifier = Modifier.clickable { showDeleteConfirm = true }
+                        ) {
+                            Text(
+                                "🗑 মুছুন",
+                                fontSize = 11.sp,
+                                color = AppColors.Error,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
                 }
                 Spacer(Modifier.height(8.dp))
                 p.history.reversed().forEach { h ->
@@ -323,8 +377,59 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                 }
             }
 
+            // ── Reviews ───────────────────────────────────────────────────────
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("গ্রাহক রিভিউ", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
+                Text("${reviews.size} রিভিউ", fontSize = 12.sp, color = AppColors.TextSecondary)
+            }
+            Spacer(Modifier.height(8.dp))
+            if (reviews.isEmpty()) {
+                Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = AppColors.Surface), elevation = CardDefaults.cardElevation(1.dp)) {
+                    Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
+                        Text("এখনো কোনো রিভিউ নেই", fontSize = 13.sp, color = AppColors.TextSecondary)
+                    }
+                }
+            } else {
+                reviews.forEach { review ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = AppColors.Surface),
+                        elevation = CardDefaults.cardElevation(2.dp)
+                    ) {
+                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(review.clientName, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
+                                Text("${"⭐".repeat(review.rating)}", fontSize = 13.sp)
+                            }
+                            if (review.serviceType.isNotBlank()) Text(review.serviceType, fontSize = 11.sp, color = AppColors.TextSecondary)
+                            if (review.comment.isNotBlank()) Text("\"${review.comment}\"", fontSize = 13.sp, color = AppColors.TextPrimary)
+                        }
+                    }
+                }
+            }
+
             Spacer(Modifier.height(16.dp))
         }
+    }
+
+    // Delete history confirmation dialog
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title   = { Text("ইতিহাস মুছে ফেলুন?") },
+            text    = { Text("সব সেবার ইতিহাস এবং আয়ের রেকর্ড মুছে যাবে। এটি পূর্বাবস্থায় ফেরানো যাবে না।") },
+            confirmButton = {
+                Button(
+                    onClick = { vm.clearHistory(); showDeleteConfirm = false },
+                    colors  = ButtonDefaults.buttonColors(containerColor = AppColors.Error)
+                ) { Text("হ্যাঁ, মুছুন") }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showDeleteConfirm = false }) { Text("বাতিল") }
+            }
+        )
     }
 }
 
