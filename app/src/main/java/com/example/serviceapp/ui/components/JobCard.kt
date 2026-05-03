@@ -39,7 +39,9 @@ import com.example.serviceapp.utils.AppStrings
 @Composable
 fun JobCard(job: Job, onAccept: () -> Unit, onClick: () -> Unit) {
 
-    val isDone = job.status == "done"
+    val isDone     = job.status == "done"
+    val isAwaiting = job.status == "awaiting"
+    val isAgreed   = job.status == "agreed"
 
     Card(
         modifier = Modifier
@@ -79,15 +81,18 @@ fun JobCard(job: Job, onAccept: () -> Unit, onClick: () -> Unit) {
                         )
                     }
                     // Status badge
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = if (isDone) Color(0xFFE8F5E9) else AppColors.PrimaryContainer
-                    ) {
+                    val (statusBg, statusFg, statusLabel) = when (job.status) {
+                        "done"     -> Triple(Color(0xFFE8F5E9), AppColors.Success,  AppStrings.accepted)
+                        "awaiting" -> Triple(Color(0xFFFFF8E1), Color(0xFFE65100),  AppStrings.awaitingClientApproval)
+                        "agreed"   -> Triple(Color(0xFFE3F2FD), Color(0xFF1565C0),  AppStrings.clientAgreed)
+                        else       -> Triple(AppColors.PrimaryContainer, AppColors.Primary, AppStrings.pending)
+                    }
+                    Surface(shape = RoundedCornerShape(20.dp), color = statusBg) {
                         Text(
-                            if (isDone) AppStrings.accepted else AppStrings.pending,
+                            statusLabel,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
-                            color = if (isDone) AppColors.Success else AppColors.Primary,
+                            color = statusFg,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                         )
                     }
@@ -145,7 +150,7 @@ fun JobCard(job: Job, onAccept: () -> Unit, onClick: () -> Unit) {
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (!isDone) {
+                if (!isDone && !isAwaiting && !isAgreed) {
                     Button(
                         onClick = { onAccept() },
                         shape = RoundedCornerShape(10.dp),
@@ -155,7 +160,13 @@ fun JobCard(job: Job, onAccept: () -> Unit, onClick: () -> Unit) {
                         Spacer(Modifier.width(4.dp))
                         Text(AppStrings.accept, fontSize = 13.sp)
                     }
-                } else {
+                } else if (isAgreed) {
+                    // Client agreed — show confirmation chip
+                    Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFE3F2FD)) {
+                        Text(AppStrings.clientAgreed, fontSize = 12.sp, color = Color(0xFF1565C0), fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+                    }
+                } else if (isDone) {
                     Surface(
                         shape = RoundedCornerShape(10.dp),
                         color = Color(0xFFE8F5E9)
