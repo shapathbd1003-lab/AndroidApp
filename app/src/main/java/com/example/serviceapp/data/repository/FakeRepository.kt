@@ -9,6 +9,7 @@ import com.example.serviceapp.data.model.Provider
 import com.example.serviceapp.data.model.ServiceHistory
 import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.utils.ServiceData
+import android.location.Location
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -127,12 +128,14 @@ object FakeRepository {
 
                     jobs.add(Job(
                         id          = doc.id,
-                        description = "${AppStrings.serviceTypeName(doc.getString("serviceType") ?: "")}",
+                        description = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
                         address     = doc.getString("address")     ?: "",
                         phone       = doc.getString("clientPhone") ?: "",
                         overview    = doc.getString("description") ?: "",
                         problemType = problemType,
-                        status      = "pending"
+                        status      = "pending",
+                        lat         = doc.getDouble("lat") ?: 0.0,
+                        lng         = doc.getDouble("lng") ?: 0.0
                     ))
                 }
             }
@@ -198,6 +201,20 @@ object FakeRepository {
     }
 
     fun setAvailability(status: String) { provider?.availability = status }
+
+    // Sort jobs by distance from provider's current location (closest first)
+    fun sortByLocation(providerLat: Double, providerLng: Double) {
+        if (providerLat == 0.0 && providerLng == 0.0) return
+        val results = FloatArray(1)
+        val withDistance = jobs.map { job ->
+            if (job.lat != 0.0 && job.lng != 0.0) {
+                Location.distanceBetween(providerLat, providerLng, job.lat, job.lng, results)
+                job.copy(distanceKm = results[0] / 1000.0)
+            } else job
+        }.sortedBy { if (it.distanceKm >= 0) it.distanceKm else Double.MAX_VALUE }
+        jobs.clear()
+        jobs.addAll(withDistance)
+    }
 
     fun clearHistory() {
         provider?.let { p ->
