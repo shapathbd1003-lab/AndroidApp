@@ -221,7 +221,9 @@ object AppStrings {
     }
 
     // ── Problem type strings ──────────────────────────────────────────────────
-    val waitingForProvider get() = if (isBn) "মিস্ত্রির জন্য অপেক্ষা করছেন..." else "Waiting for a provider..."
+    val waitingForProvider    get() = if (isBn) "মিস্ত্রির জন্য অপেক্ষা করছেন..." else "Waiting for a provider..."
+    val awaitingClientApproval get() = if (isBn) "গ্রাহকের সিদ্ধান্তের অপেক্ষায়..." else "Waiting for client approval..."
+    val clientAgreed           get() = if (isBn) "✅ গ্রাহক রাজি — কাজ শুরু করুন!" else "✅ Client agreed — start work!"
 
     val normalProblem   get() = if (isBn) "সাধারণ সমস্যা" else "Normal"
     val advancedProblem get() = if (isBn) "জটিল সমস্যা"   else "Advanced"

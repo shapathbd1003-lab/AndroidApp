@@ -28,8 +28,14 @@ object FakeRepository {
 
     private val auth: FirebaseAuth      get() = FirebaseAuth.getInstance()
     private val db:   FirebaseFirestore get() = FirebaseFirestore.getInstance()
-    private var requestsListener: ListenerRegistration? = null
+    private var pendingListener:  ListenerRegistration? = null  // all pending jobs for this service
+    private var myJobsListener:   ListenerRegistration? = null  // provider's own in-progress jobs
+    private var requestsListener: ListenerRegistration? = null  // kept for compat
     private var approvalListener: ListenerRegistration? = null
+
+    // Intermediate maps to merge both listeners
+    private val pendingJobs = mutableMapOf<String, Job>()
+    private val myJobs      = mutableMapOf<String, Job>()
 
     // Service type IDs — used by RegisterScreen chips
     val serviceTypes get() = ServiceData.categories.map { it.id }
@@ -106,27 +112,28 @@ object FakeRepository {
             availability = doc.getString("availability") ?: "available",
             rating       = doc.getDouble("rating")       ?: 4.5,
             skillLevel   = doc.getString("skillLevel")   ?: "general",
+            advance      = doc.getDouble("advance")      ?: 0.0,
             isApproved   = if (approvedRaw == null) null else approvedRaw as? Boolean
         )
     }
 
-    // ── Real-time listener: client requests matching provider's service & skill ─
+    // ── Real-time listeners ───────────────────────────────────────────────────
     fun startListeningToRequests() {
         val p   = provider ?: return
         val uid = auth.currentUser?.uid ?: return
         val allowed = ServiceData.allowedTypes(p.skillLevel)
 
-        requestsListener?.remove()
-        requestsListener = db.collection("requests")
+        // Listener 1: all PENDING jobs for this service type (to accept)
+        pendingListener?.remove()
+        pendingListener = db.collection("requests")
             .whereEqualTo("serviceType", p.serviceType)
             .whereEqualTo("status", "pending")
             .addSnapshotListener { snaps, _ ->
-                jobs.clear()
+                pendingJobs.clear()
                 snaps?.documents?.forEach { doc ->
                     val problemType = doc.getString("problemType") ?: "normal"
                     if (problemType !in allowed) return@forEach
-
-                    jobs.add(Job(
+                    pendingJobs[doc.id] = Job(
                         id          = doc.id,
                         description = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
                         address     = doc.getString("address")     ?: "",
@@ -136,9 +143,82 @@ object FakeRepository {
                         status      = "pending",
                         lat         = doc.getDouble("lat") ?: 0.0,
                         lng         = doc.getDouble("lng") ?: 0.0
-                    ))
+                    )
                 }
+                rebuildJobList()
             }
+
+        // Listener 2: provider's own jobs (awaiting client / accepted / completed)
+        myJobsListener?.remove()
+        myJobsListener = db.collection("requests")
+            .whereEqualTo("providerId", uid)
+            .addSnapshotListener { snaps, _ ->
+                myJobs.clear()
+                snaps?.documents?.forEach { doc ->
+                    when (val status = doc.getString("status") ?: return@forEach) {
+                        "awaiting_approval" -> {
+                            myJobs[doc.id] = Job(
+                                id          = doc.id,
+                                description = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
+                                address     = doc.getString("address")     ?: "",
+                                phone       = doc.getString("clientPhone") ?: "",
+                                overview    = doc.getString("description") ?: "",
+                                problemType = doc.getString("problemType") ?: "normal",
+                                status      = "awaiting",   // waiting for client decision
+                                lat         = doc.getDouble("lat") ?: 0.0,
+                                lng         = doc.getDouble("lng") ?: 0.0
+                            )
+                        }
+                        "accepted" -> {
+                            // Client agreed — show "start work" state
+                            myJobs[doc.id] = Job(
+                                id          = doc.id,
+                                description = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
+                                address     = doc.getString("address")     ?: "",
+                                phone       = doc.getString("clientPhone") ?: "",
+                                overview    = doc.getString("description") ?: "",
+                                problemType = doc.getString("problemType") ?: "normal",
+                                status      = "agreed",
+                                lat         = doc.getDouble("lat") ?: 0.0,
+                                lng         = doc.getDouble("lng") ?: 0.0
+                            )
+                        }
+                        "completed" -> {
+                            // Client marked done — add to provider history if not already there
+                            val prov = provider
+                            if (prov != null && prov.history.none { it.id == doc.id }) {
+                                val desc = AppStrings.serviceTypeName(doc.getString("serviceType") ?: "")
+                                prov.advance += prov.baseFee
+                                prov.history.add(ServiceHistory(doc.id, desc, prov.baseFee))
+
+                                // Persist updated advance to Firestore
+                                val uid = auth.currentUser?.uid
+                                if (uid != null) {
+                                    CoroutineScope(Dispatchers.IO).launch {
+                                        runCatching {
+                                            db.collection("providers").document(uid).update(
+                                                mapOf("advance" to prov.advance)
+                                            ).await()
+                                        }
+                                    }
+                                }
+                            }
+                            // Completed jobs don't appear in active job list
+                        }
+                    }
+                }
+                rebuildJobList()
+            }
+    }
+
+    private fun rebuildJobList() {
+        val sorted = (pendingJobs.values + myJobs.values)
+            .sortedWith(compareBy(
+                { when (it.status) { "agreed" -> 0; "awaiting" -> 1; else -> 2 } },
+                { if (it.distanceKm >= 0) it.distanceKm else Double.MAX_VALUE }
+            ))
+        jobs.clear()
+        jobs.addAll(sorted)
     }
 
     // ── Approval listener — auto fires when admin approves/rejects ────────────
@@ -162,17 +242,12 @@ object FakeRepository {
 
     // ── Accept a real client request ──────────────────────────────────────────
     fun accept(job: Job) {
-        // Update local state immediately for responsive UI
-        val idx = jobs.indexOfFirst { it.id == job.id }
-        if (idx >= 0) {
-            jobs[idx] = job.copy(status = "done")
-            provider?.let { p ->
-                p.advance += p.baseFee
-                p.history.add(ServiceHistory(job.id, job.description, p.baseFee))
-            }
-        }
+        // Optimistic: move from pending to awaiting in local list immediately
+        pendingJobs.remove(job.id)
+        myJobs[job.id] = job.copy(status = "awaiting")
+        rebuildJobList()
 
-        // Write acceptance to Firestore
+        // Write acceptance to Firestore — triggers myJobsListener update
         val p   = provider ?: return
         val uid = auth.currentUser?.uid ?: return
         CoroutineScope(Dispatchers.IO).launch {
@@ -193,8 +268,10 @@ object FakeRepository {
     // ── Logout ────────────────────────────────────────────────────────────────
     fun logout() {
         auth.signOut()
-        requestsListener?.remove()
-        requestsListener = null
+        pendingListener?.remove();  pendingListener  = null
+        myJobsListener?.remove();   myJobsListener   = null
+        requestsListener?.remove(); requestsListener = null
+        pendingJobs.clear(); myJobs.clear()
         loggedIn  = false
         provider  = null
         jobs.clear()
