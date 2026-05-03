@@ -59,10 +59,11 @@ class ClientViewModel : ViewModel() {
     fun createRequest(serviceType: String, description: String, address: String,
                       minRating: Double = 0.0, maxPrice: Double = 0.0,
                       problemType: String = "normal",
+                      lat: Double = 0.0, lng: Double = 0.0,
                       onSuccess: () -> Unit) {
         viewModelScope.launch {
             requestLoading = true
-            ClientRepository.createRequest(serviceType, description, address, minRating, maxPrice, problemType).fold(
+            ClientRepository.createRequest(serviceType, description, address, minRating, maxPrice, problemType, lat, lng).fold(
                 onSuccess = { requestLoading = false; onSuccess() },
                 onFailure = { requestLoading = false }
             )

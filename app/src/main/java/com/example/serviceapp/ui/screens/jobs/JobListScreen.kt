@@ -1,47 +1,54 @@
 package com.example.serviceapp.ui.screens.jobs
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.List
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
+import com.google.android.gms.location.LocationServices
 import com.example.serviceapp.navigation.Screen
 import com.example.serviceapp.ui.components.JobCard
 import com.example.serviceapp.ui.theme.AppColors
 import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.viewmodel.MainViewModel
 
+@SuppressLint("MissingPermission")
 @Composable
 fun JobListScreen(vm: MainViewModel, nav: NavController) {
 
     val pendingCount = vm.jobs.count { it.status == "pending" }
+    val context      = LocalContext.current
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(AppColors.Background)
-    ) {
+    // Get provider location once and sort jobs by distance
+    LaunchedEffect(vm.jobs.size) {
+        val fine   = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
+        if (fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED) {
+            LocationServices.getFusedLocationProviderClient(context)
+                .lastLocation
+                .addOnSuccessListener { loc ->
+                    if (loc != null) vm.sortJobsByLocation(loc.latitude, loc.longitude)
+                }
+        }
+    }
+
+    Column(Modifier.fillMaxSize().background(AppColors.Background)) {
         Box(
             Modifier
                 .fillMaxWidth()
@@ -51,12 +58,20 @@ fun JobListScreen(vm: MainViewModel, nav: NavController) {
         ) {
             Column {
                 Text(AppStrings.availableJobs, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                Text(
-                    if (pendingCount > 0) "$pendingCount ${AppStrings.pending}"
-                    else AppStrings.jobsAppear,
-                    fontSize = 13.sp,
-                    color = Color.White.copy(alpha = 0.8f)
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (pendingCount > 0) {
+                        Icon(Icons.Default.LocationOn, null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(13.dp))
+                        Text(
+                            if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN)
+                                "$pendingCount টি কাজ — নিকটতম থেকে সাজানো"
+                            else
+                                "$pendingCount jobs — sorted by nearest",
+                            fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f)
+                        )
+                    } else {
+                        Text(AppStrings.jobsAppear, fontSize = 13.sp, color = Color.White.copy(alpha = 0.8f))
+                    }
+                }
             }
         }
 

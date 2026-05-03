@@ -90,9 +90,10 @@ class MainViewModel : ViewModel() {
 
     // ── Simulation ───────────────────────────────────────────────────────────
 
-    fun clearHistory()             = FakeRepository.clearHistory()
-    fun accept(job: Job)           = FakeRepository.accept(job)
-    fun setAvailability(s: String) = FakeRepository.setAvailability(s)
+    fun clearHistory()                            = FakeRepository.clearHistory()
+    fun accept(job: Job)                          = FakeRepository.accept(job)
+    fun setAvailability(s: String)                = FakeRepository.setAvailability(s)
+    fun sortJobsByLocation(lat: Double, lng: Double) = FakeRepository.sortByLocation(lat, lng)
 
     // ── Language ─────────────────────────────────────────────────────────────
 

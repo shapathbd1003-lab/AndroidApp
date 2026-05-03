@@ -118,8 +118,21 @@ fun JobCard(job: Job, onAccept: () -> Unit, onClick: () -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.LocationOn, null, tint = Color(0xFF9E9E9E), modifier = Modifier.size(15.dp))
                 Spacer(Modifier.width(4.dp))
-                Text(job.address, fontSize = 12.sp, color = AppColors.TextSecondary)
-                Spacer(Modifier.width(14.dp))
+                Text(job.address, fontSize = 12.sp, color = AppColors.TextSecondary, modifier = Modifier.weight(1f))
+                if (job.distanceKm >= 0) {
+                    Spacer(Modifier.width(8.dp))
+                    Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp), color = AppColors.PrimaryContainer) {
+                        Text(
+                            if (job.distanceKm < 1.0) "${"%.0f".format(job.distanceKm * 1000)} m"
+                            else "${"%.1f".format(job.distanceKm)} km",
+                            fontSize = 11.sp, color = AppColors.Primary, fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Phone, null, tint = Color(0xFF9E9E9E), modifier = Modifier.size(15.dp))
                 Spacer(Modifier.width(4.dp))
                 Text(job.phone, fontSize = 12.sp, color = AppColors.TextSecondary)

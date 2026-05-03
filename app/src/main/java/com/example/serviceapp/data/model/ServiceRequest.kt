@@ -19,5 +19,7 @@ data class ServiceRequest(
     val providerBaseFee: Double = 0.0,
     var rating:          Int    = 0,
     var reviewComment:   String = "",
-    val problemType:     String = "normal"   // "normal" | "advanced" | "critical"
+    val problemType:     String = "normal",
+    val lat:             Double = 0.0,
+    val lng:             Double = 0.0
 )

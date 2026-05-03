@@ -1,4 +1,4 @@
-package com.example.serviceapp.ui.screens.client
+ï»¿package com.example.serviceapp.ui.screens.client
 
 import android.Manifest
 import android.content.Intent
@@ -47,8 +47,10 @@ private fun priceLabel(v: Double)  = if (v == 0.0) AppStrings.anyFilter else "à§
 fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
     var selectedCategoryId  by remember { mutableStateOf("") }
     var selectedProblems    by remember { mutableStateOf(setOf<String>()) }  // multiple
-    var customNote          by remember { mutableStateOf("") }  // "add more" text
+    var customNote          by remember { mutableStateOf("") }
     var address             by remember { mutableStateOf("") }
+    var locationLat         by remember { mutableStateOf(0.0) }
+    var locationLng         by remember { mutableStateOf(0.0) }
     var minRating           by remember { mutableStateOf(0.0) }
     var maxPrice            by remember { mutableStateOf(0.0) }
     var locationLoading     by remember { mutableStateOf(false) }
@@ -91,7 +93,7 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                       perms[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         if (granted) {
             locationLoading = true
-            scope.launch { address = LocationHelper.getCurrentAddress(context) ?: address; locationLoading = false }
+            scope.launch { val r = LocationHelper.getLocationResult(context); if (r != null) { address = r.address; locationLat = r.lat; locationLng = r.lng }; locationLoading = false }
         }
     }
 
@@ -113,7 +115,7 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
         val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
         if (fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED) {
             locationLoading = true
-            scope.launch { address = LocationHelper.getCurrentAddress(context) ?: address; locationLoading = false }
+            scope.launch { val r = LocationHelper.getLocationResult(context); if (r != null) { address = r.address; locationLat = r.lat; locationLng = r.lng }; locationLoading = false }
         } else {
             locationPermLauncher.launch(arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,
@@ -353,7 +355,7 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
         Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp)) {
             Button(
                 onClick = {
-                    vm.createRequest(selectedCategoryId, description.trim(), address.trim(), minRating, maxPrice, selectedProblemType) {
+                    vm.createRequest(selectedCategoryId, description.trim(), address.trim(), minRating, maxPrice, selectedProblemType, locationLat, locationLng) {
                         nav.navigate(Screen.ClientDashboard.route) {
                             popUpTo(Screen.ClientDashboard.route) { inclusive = true }
                         }

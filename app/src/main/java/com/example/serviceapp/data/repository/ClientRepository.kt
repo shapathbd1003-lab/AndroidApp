@@ -68,30 +68,33 @@ object ClientRepository {
     suspend fun createRequest(
         serviceType: String, description: String, address: String,
         minRating: Double = 0.0, maxPrice: Double = 0.0,
-        problemType: String = "normal"
+        problemType: String = "normal",
+        lat: Double = 0.0, lng: Double = 0.0
     ): Result<String> = runCatching {
         val c   = client ?: error("Not logged in")
         val rid = UUID.randomUUID().toString()
 
         db.collection("requests").document(rid).set(hashMapOf<String, Any?>(
-            "clientId"       to c.id,
-            "clientName"     to c.name,
-            "clientPhone"    to c.phone,
-            "serviceType"    to serviceType,
-            "description"    to description,
-            "address"        to address,
-            "status"         to "pending",
-            "minRating"      to minRating,
-            "maxPrice"       to maxPrice,
-            "problemType"    to problemType,
-            "providerId"     to "",
-            "providerName"   to "",
-            "providerPhone"  to "",
-            "providerRating" to 0.0,
+            "clientId"        to c.id,
+            "clientName"      to c.name,
+            "clientPhone"     to c.phone,
+            "serviceType"     to serviceType,
+            "description"     to description,
+            "address"         to address,
+            "lat"             to lat,
+            "lng"             to lng,
+            "status"          to "pending",
+            "minRating"       to minRating,
+            "maxPrice"        to maxPrice,
+            "problemType"     to problemType,
+            "providerId"      to "",
+            "providerName"    to "",
+            "providerPhone"   to "",
+            "providerRating"  to 0.0,
             "providerBaseFee" to 0.0,
-            "rating"         to 0,
-            "reviewComment"  to "",
-            "createdAt"      to FieldValue.serverTimestamp()
+            "rating"          to 0,
+            "reviewComment"   to "",
+            "createdAt"       to FieldValue.serverTimestamp()
         )).await()
         rid
     }
