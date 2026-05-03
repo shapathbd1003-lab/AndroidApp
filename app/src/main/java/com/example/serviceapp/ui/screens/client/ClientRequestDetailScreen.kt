@@ -192,17 +192,44 @@ private fun FilterSummaryCard(req: ServiceRequest) {
 
 @Composable
 private fun ProviderApprovalCard(req: ServiceRequest) {
+    // Fetch provider's completed jobs count from Firestore
+    var completedJobs by remember { mutableStateOf(-1) }
+    LaunchedEffect(req.providerId) {
+        if (req.providerId.isNotBlank()) {
+            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("providers").document(req.providerId).get()
+                .addOnSuccessListener { doc ->
+                    completedJobs = (doc.getLong("completedJobs") ?: 0).toInt()
+                }
+        }
+    }
+
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFE8EAF6)), elevation = CardDefaults.cardElevation(2.dp)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("মিস্ত্রির প্রস্তাব", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1A237E))
+            Text(AppStrings.providerProposal, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1A237E))
             HorizontalDivider(color = Color(0xFF1A237E).copy(alpha = 0.2f))
-            InfoRow("👤 নাম",       req.providerName)
-            InfoRow("📞 ফোন",       req.providerPhone)
-            InfoRow("⭐ রেটিং",     "%.1f / 5.0".format(req.providerRating))
-            InfoRow("💰 বেস ফি",    "৳ ${req.providerBaseFee.toInt()} প্রতি সেবায়")
+            InfoRow("👤 ${AppStrings.providerName}",  req.providerName)
+            InfoRow("📞 ${AppStrings.providerPhone}",  req.providerPhone)
+            // Rating with stars
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("⭐ ${AppStrings.providerRatingLbl}", fontSize = 13.sp, color = Color(0xFF757575), modifier = Modifier.widthIn(min = 90.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    repeat(5) { i ->
+                        Text(if (i < req.providerRating.toInt()) "⭐" else "☆", fontSize = 14.sp)
+                    }
+                    Text("${"%.1f".format(req.providerRating)}", fontSize = 13.sp, color = Color(0xFF212121), fontWeight = FontWeight.Medium)
+                }
+            }
+            if (completedJobs >= 0) {
+                InfoRow("✅ সম্পন্ন কাজ", "$completedJobs টি কাজ / $completedJobs jobs")
+            }
+            InfoRow("💰 ${AppStrings.providerFeeLbl}", "৳ ${req.providerBaseFee.toInt()} প্রতি সেবায়")
             Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFFE8F5E9)) {
                 Text(
-                    "এই মিস্ত্রিকে নিয়োগ দিতে চান? নিচে সম্মতি দিন।",
+                    if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN)
+                        "এই মিস্ত্রিকে নিয়োগ দিতে চান? নিচে সম্মতি দিন।"
+                    else
+                        "Want to hire this provider? Confirm below.",
                     fontSize = 13.sp, color = Color(0xFF2E7D32),
                     modifier = Modifier.padding(10.dp)
                 )

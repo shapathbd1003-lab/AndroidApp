@@ -127,21 +127,33 @@ object ClientRepository {
             "completedAt"   to FieldValue.serverTimestamp()
         )).await()
 
-        // Store review in separate collection for provider profile
         if (rating > 0) {
             val req = requests.find { it.id == requestId }
             if (req != null && req.providerId.isNotBlank()) {
+                // Save review
                 val reviewId = UUID.randomUUID().toString()
                 db.collection("reviews").document(reviewId).set(hashMapOf<String, Any?>(
-                    "providerId"    to req.providerId,
-                    "clientId"      to (client?.id ?: ""),
-                    "clientName"    to (client?.name ?: ""),
-                    "requestId"     to requestId,
-                    "serviceType"   to req.serviceType,
-                    "rating"        to rating,
-                    "comment"       to comment,
-                    "createdAt"     to FieldValue.serverTimestamp()
+                    "providerId"  to req.providerId,
+                    "clientId"    to (client?.id ?: ""),
+                    "clientName"  to (client?.name ?: ""),
+                    "requestId"   to requestId,
+                    "serviceType" to req.serviceType,
+                    "rating"      to rating,
+                    "comment"     to comment,
+                    "createdAt"   to FieldValue.serverTimestamp()
                 )).await()
+
+                // Update provider's average rating from all reviews
+                val allReviews = db.collection("reviews")
+                    .whereEqualTo("providerId", req.providerId)
+                    .get().await()
+                val ratings = allReviews.documents.mapNotNull { it.getLong("rating")?.toInt() }.filter { it > 0 }
+                if (ratings.isNotEmpty()) {
+                    val avg = ratings.average()
+                    db.collection("providers").document(req.providerId).update(
+                        mapOf("rating" to avg, "completedJobs" to ratings.size)
+                    ).await()
+                }
             }
         }
     }

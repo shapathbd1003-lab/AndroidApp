@@ -166,16 +166,20 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                         Surface(
                             shape = RoundedCornerShape(20.dp),
                             color = if (isSelected) Color.White else Color.White.copy(alpha = 0.15f),
-                            modifier = Modifier.weight(1f).clickable { vm.setAvailability(opt) }
+                            modifier = Modifier
+                                .weight(1f)
+                                .defaultMinSize(minHeight = 40.dp)
+                                .clickable { vm.setAvailability(opt) }
                         ) {
-                            Text(
-                                availabilityLabels[opt] ?: opt,
-                                fontSize = 10.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) availabilityColors[opt] ?: AppColors.Primary else Color.White,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp)) {
+                                Text(
+                                    availabilityLabels[opt] ?: opt,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) availabilityColors[opt] ?: AppColors.Primary else Color.White,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                            }
                         }
                     }
                 }
