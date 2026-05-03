@@ -1,7 +1,10 @@
 package com.example.serviceapp.ui.screens.client
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.LocationManager
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -92,7 +95,20 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
         }
     }
 
+    var showLocationOffDialog by remember { mutableStateOf(false) }
+
+    fun isLocationServiceEnabled(): Boolean {
+        val lm = context.getSystemService(android.content.Context.LOCATION_SERVICE) as LocationManager
+        return lm.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+               lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+    }
+
     fun fetchLocation() {
+        // Check if location services (GPS) are on
+        if (!isLocationServiceEnabled()) {
+            showLocationOffDialog = true
+            return
+        }
         val fine   = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
         val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
         if (fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED) {
@@ -104,6 +120,28 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ))
         }
+    }
+
+    // Location off dialog
+    if (showLocationOffDialog) {
+        AlertDialog(
+            onDismissRequest = { showLocationOffDialog = false },
+            title   = { Text(if (AppStrings.lang == AppLanguage.BN) "লোকেশন বন্ধ আছে" else "Location is Off") },
+            text    = { Text(if (AppStrings.lang == AppLanguage.BN) "আপনার ফোনের লোকেশন চালু করুন এবং আবার চেষ্টা করুন।" else "Please turn on your device location (GPS) and try again.") },
+            confirmButton = {
+                Button(onClick = {
+                    showLocationOffDialog = false
+                    context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                }) {
+                    Text(if (AppStrings.lang == AppLanguage.BN) "সেটিংস খুলুন" else "Open Settings")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showLocationOffDialog = false }) {
+                    Text(if (AppStrings.lang == AppLanguage.BN) "বাতিল" else "Cancel")
+                }
+            }
+        )
     }
 
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF3E5F5))) {
