@@ -224,6 +224,19 @@ object AppStrings {
     val waitingForProvider    get() = if (isBn) "মিস্ত্রির জন্য অপেক্ষা করছেন..." else "Waiting for a provider..."
     val awaitingClientApproval get() = if (isBn) "গ্রাহকের সিদ্ধান্তের অপেক্ষায়..." else "Waiting for client approval..."
     val clientAgreed           get() = if (isBn) "✅ গ্রাহক রাজি — কাজ শুরু করুন!" else "✅ Client agreed — start work!"
+    val onTheWayStatus         get() = if (isBn) "🛵 রওনা দিয়েছি" else "🛵 On the Way"
+    val providerOnTheWay       get() = if (isBn) "🛵 মিস্ত্রি আসছেন!" else "🛵 Provider is on the way!"
+    val markOnTheWay           get() = if (isBn) "🛵 রওনা দিচ্ছি" else "🛵 I'm on the way"
+    val arrived                get() = if (isBn) "🏠 পৌঁছে গেছি" else "🏠 Arrived"
+    // Points
+    val pointsLabel            get() = if (isBn) "পয়েন্ট" else "Points"
+    val insufficientPoints     get() = if (isBn) "পর্যাপ্ত পয়েন্ট নেই" else "Insufficient points"
+    val pointsRequired         get() = if (isBn) "প্রতি কাজে ৪০০ পয়েন্ট প্রয়োজন" else "400 points required per job"
+    // Phone validation
+    val phoneMustBe11          get() = if (isBn) "ফোন নম্বর ১১ সংখ্যার হতে হবে" else "Phone number must be 11 digits"
+    // Custom price
+    val setJobPrice            get() = if (isBn) "কাজের মূল্য নির্ধারণ করুন" else "Set job price"
+    val agreedPriceLabel       get() = if (isBn) "সম্মত মূল্য" else "Agreed Price"
 
     val normalProblem   get() = if (isBn) "সাধারণ সমস্যা" else "Normal"
     val advancedProblem get() = if (isBn) "জটিল সমস্যা"   else "Advanced"

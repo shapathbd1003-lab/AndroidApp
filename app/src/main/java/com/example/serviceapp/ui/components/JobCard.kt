@@ -37,11 +37,18 @@ import com.example.serviceapp.ui.theme.AppColors
 import com.example.serviceapp.utils.AppStrings
 
 @Composable
-fun JobCard(job: Job, onAccept: () -> Unit, onClick: () -> Unit) {
+fun JobCard(
+    job:           Job,
+    onAccept:      () -> Unit,
+    onClick:       () -> Unit,
+    onMarkOnTheWay: (() -> Unit)? = null,
+    hasPoints:     Boolean = true
+) {
 
-    val isDone     = job.status == "done"
-    val isAwaiting = job.status == "awaiting"
-    val isAgreed   = job.status == "agreed"
+    val isDone      = job.status == "done"
+    val isAwaiting  = job.status == "awaiting"
+    val isAgreed    = job.status == "agreed"
+    val isOnTheWay  = job.status == "on_the_way"
 
     Card(
         modifier = Modifier
@@ -82,10 +89,11 @@ fun JobCard(job: Job, onAccept: () -> Unit, onClick: () -> Unit) {
                     }
                     // Status badge
                     val (statusBg, statusFg, statusLabel) = when (job.status) {
-                        "done"     -> Triple(Color(0xFFE8F5E9), AppColors.Success,  AppStrings.accepted)
-                        "awaiting" -> Triple(Color(0xFFFFF8E1), Color(0xFFE65100),  AppStrings.awaitingClientApproval)
-                        "agreed"   -> Triple(Color(0xFFE3F2FD), Color(0xFF1565C0),  AppStrings.clientAgreed)
-                        else       -> Triple(AppColors.PrimaryContainer, AppColors.Primary, AppStrings.pending)
+                        "done"       -> Triple(Color(0xFFE8F5E9), AppColors.Success,    AppStrings.accepted)
+                        "awaiting"   -> Triple(Color(0xFFFFF8E1), Color(0xFFE65100),    AppStrings.awaitingClientApproval)
+                        "agreed"     -> Triple(Color(0xFFE3F2FD), Color(0xFF1565C0),    AppStrings.clientAgreed)
+                        "on_the_way" -> Triple(Color(0xFFE8EAF6), AppColors.Primary,    AppStrings.onTheWayStatus)
+                        else         -> Triple(AppColors.PrimaryContainer, AppColors.Primary, AppStrings.pending)
                     }
                     Surface(shape = RoundedCornerShape(20.dp), color = statusBg) {
                         Text(
@@ -150,21 +158,37 @@ fun JobCard(job: Job, onAccept: () -> Unit, onClick: () -> Unit) {
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (!isDone && !isAwaiting && !isAgreed) {
+                if (!isDone && !isAwaiting && !isAgreed && !isOnTheWay) {
+                    if (!hasPoints) {
+                        // Insufficient points warning
+                        Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFFFEBEE)) {
+                            Text(AppStrings.insufficientPoints, fontSize = 12.sp, color = Color(0xFFC62828),
+                                fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+                        }
+                    } else {
+                        Button(
+                            onClick = { onAccept() },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
+                        ) {
+                            Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(AppStrings.accept, fontSize = 13.sp)
+                        }
+                    }
+                } else if (isAgreed && onMarkOnTheWay != null) {
+                    // Client agreed — provider can now go
                     Button(
-                        onClick = { onAccept() },
+                        onClick = { onMarkOnTheWay() },
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
                     ) {
-                        Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(AppStrings.accept, fontSize = 13.sp)
+                        Text(AppStrings.markOnTheWay, fontSize = 13.sp)
                     }
-                } else if (isAgreed) {
-                    // Client agreed — show confirmation chip
-                    Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFE3F2FD)) {
-                        Text(AppStrings.clientAgreed, fontSize = 12.sp, color = Color(0xFF1565C0), fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+                } else if (isOnTheWay) {
+                    Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFE8EAF6)) {
+                        Text(AppStrings.onTheWayStatus, fontSize = 12.sp, color = AppColors.Primary,
+                            fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
                     }
                 } else if (isDone) {
                     Surface(

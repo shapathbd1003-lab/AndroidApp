@@ -57,7 +57,16 @@ fun JobListScreen(vm: MainViewModel, nav: NavController) {
                 .padding(16.dp)
         ) {
             Column {
-                Text(AppStrings.availableJobs, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text(AppStrings.availableJobs, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    // Points badge
+                    val pts = vm.points
+                    val ptsBg = if (pts >= 400) Color.White.copy(alpha = 0.2f) else Color(0xFFC62828).copy(alpha = 0.8f)
+                    Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp), color = ptsBg) {
+                        Text("⭐ $pts ${AppStrings.pointsLabel}", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp))
+                    }
+                }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     if (pendingCount > 0) {
                         Icon(Icons.Default.LocationOn, null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(13.dp))
@@ -89,9 +98,11 @@ fun JobListScreen(vm: MainViewModel, nav: NavController) {
             LazyColumn {
                 items(vm.jobs, key = { it.id }) { job ->
                     JobCard(
-                        job      = job,
-                        onAccept = { vm.accept(job) },
-                        onClick  = { nav.navigate(Screen.JobDetail.createRoute(job.id)) }
+                        job            = job,
+                        onAccept       = { vm.accept(job) },
+                        onClick        = { nav.navigate(Screen.JobDetail.createRoute(job.id)) },
+                        onMarkOnTheWay = if (job.status == "agreed") ({ vm.markOnTheWay(job.id) }) else null,
+                        hasPoints      = vm.hasEnoughPoints
                     )
                 }
             }

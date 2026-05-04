@@ -62,6 +62,7 @@ object FakeRepository {
             "availability" to "available",
             "rating"       to 4.5,
             "skillLevel"   to skillLevel,
+            "points"       to 500,
             "isApproved"   to null,
             "createdAt"    to FieldValue.serverTimestamp()
         )).await()
@@ -113,6 +114,7 @@ object FakeRepository {
             rating       = doc.getDouble("rating")       ?: 4.5,
             skillLevel   = doc.getString("skillLevel")   ?: "general",
             advance      = doc.getDouble("advance")      ?: 0.0,
+            points       = (doc.getLong("points")        ?: 500).toInt(),
             isApproved   = if (approvedRaw == null) null else approvedRaw as? Boolean
         )
     }
@@ -170,7 +172,6 @@ object FakeRepository {
                             )
                         }
                         "accepted" -> {
-                            // Client agreed — show "start work" state
                             myJobs[doc.id] = Job(
                                 id          = doc.id,
                                 description = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
@@ -179,6 +180,19 @@ object FakeRepository {
                                 overview    = doc.getString("description") ?: "",
                                 problemType = doc.getString("problemType") ?: "normal",
                                 status      = "agreed",
+                                lat         = doc.getDouble("lat") ?: 0.0,
+                                lng         = doc.getDouble("lng") ?: 0.0
+                            )
+                        }
+                        "on_the_way" -> {
+                            myJobs[doc.id] = Job(
+                                id          = doc.id,
+                                description = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
+                                address     = doc.getString("address")     ?: "",
+                                phone       = doc.getString("clientPhone") ?: "",
+                                overview    = doc.getString("description") ?: "",
+                                problemType = doc.getString("problemType") ?: "normal",
+                                status      = "on_the_way",
                                 lat         = doc.getDouble("lat") ?: 0.0,
                                 lng         = doc.getDouble("lng") ?: 0.0
                             )
@@ -241,15 +255,22 @@ object FakeRepository {
     }
 
     // ── Accept a real client request ──────────────────────────────────────────
-    fun accept(job: Job) {
+    // Returns false if insufficient points
+    fun accept(job: Job): Boolean {
+        val p   = provider ?: return false
+        val uid = auth.currentUser?.uid ?: return false
+
+        // Points check — need 400 to accept a job
+        if (p.points < 400) return false
+
+        // Deduct 400 points immediately
+        p.points -= 400
+
         // Optimistic: move from pending to awaiting in local list immediately
         pendingJobs.remove(job.id)
         myJobs[job.id] = job.copy(status = "awaiting")
         rebuildJobList()
 
-        // Write acceptance to Firestore — triggers myJobsListener update
-        val p   = provider ?: return
-        val uid = auth.currentUser?.uid ?: return
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
                 db.collection("requests").document(job.id).update(mapOf(
@@ -261,6 +282,44 @@ object FakeRepository {
                     "providerBaseFee" to p.baseFee,
                     "acceptedAt"      to FieldValue.serverTimestamp()
                 )).await()
+                // Persist deducted points
+                db.collection("providers").document(uid).update(mapOf("points" to p.points)).await()
+            }
+        }
+        return true
+    }
+
+    // ── On the way ────────────────────────────────────────────────────────────
+    fun markOnTheWay(jobId: String) {
+        val idx = jobs.indexOfFirst { it.id == jobId }
+        if (idx >= 0) jobs[idx] = jobs[idx].copy(status = "on_the_way")
+        CoroutineScope(Dispatchers.IO).launch {
+            runCatching {
+                db.collection("requests").document(jobId).update(mapOf(
+                    "status"       to "on_the_way",
+                    "onTheWayAt"   to FieldValue.serverTimestamp()
+                )).await()
+            }
+        }
+    }
+
+    // ── Set custom agreed price ───────────────────────────────────────────────
+    fun setAgreedPrice(jobId: String, price: Double) {
+        CoroutineScope(Dispatchers.IO).launch {
+            runCatching {
+                db.collection("requests").document(jobId).update(mapOf("agreedPrice" to price)).await()
+            }
+        }
+    }
+
+    // ── Add points (called by admin) ──────────────────────────────────────────
+    fun addPoints(amount: Int) {
+        val p   = provider ?: return
+        val uid = auth.currentUser?.uid ?: return
+        p.points += amount
+        CoroutineScope(Dispatchers.IO).launch {
+            runCatching {
+                db.collection("providers").document(uid).update(mapOf("points" to p.points)).await()
             }
         }
     }

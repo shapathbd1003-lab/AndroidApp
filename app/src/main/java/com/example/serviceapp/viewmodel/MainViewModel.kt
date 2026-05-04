@@ -90,9 +90,14 @@ class MainViewModel : ViewModel() {
 
     // ── Simulation ───────────────────────────────────────────────────────────
 
-    fun clearHistory()                            = FakeRepository.clearHistory()
-    fun accept(job: Job)                          = FakeRepository.accept(job)
-    fun setAvailability(s: String)                = FakeRepository.setAvailability(s)
+    val points get() = FakeRepository.provider?.points ?: 0
+    val hasEnoughPoints get() = points >= 400
+
+    fun clearHistory()                               = FakeRepository.clearHistory()
+    fun accept(job: Job): Boolean                    = FakeRepository.accept(job)
+    fun markOnTheWay(jobId: String)                  = FakeRepository.markOnTheWay(jobId)
+    fun setAgreedPrice(jobId: String, price: Double) = FakeRepository.setAgreedPrice(jobId, price)
+    fun setAvailability(s: String)                   = FakeRepository.setAvailability(s)
     fun sortJobsByLocation(lat: Double, lng: Double) = FakeRepository.sortByLocation(lat, lng)
 
     // ── Language ─────────────────────────────────────────────────────────────
