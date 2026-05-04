@@ -138,6 +138,7 @@ private fun StatusCard(req: ServiceRequest) {
     val (bg, fg, emoji, label) = when (req.status) {
         "awaiting_approval" -> listOf(Color(0xFFE8EAF6), Color(0xFF1A237E), "🔍", "মিস্ত্রি পাওয়া গেছে — আপনার সিদ্ধান্ত নিন")
         "accepted"          -> listOf(Color(0xFFE3F2FD), Color(0xFF1565C0), "🔧", "মিস্ত্রি নিশ্চিত — কাজ শুরু হচ্ছে!")
+        "on_the_way"        -> listOf(Color(0xFFE8EAF6), Color(0xFF1A237E), "🛵", AppStrings.providerOnTheWay)
         "completed"         -> listOf(Color(0xFFE8F5E9), Color(0xFF2E7D32), "☑️", "কাজ সম্পন্ন!")
         "cancelled"         -> listOf(Color(0xFFFFEBEE), Color(0xFFC62828), "❌", "অনুরোধ বাতিল হয়েছে")
         else                -> listOf(Color(0xFFFFF8E1), Color(0xFFE65100), "⏳", AppStrings.waitingForProvider)
@@ -247,7 +248,10 @@ private fun ProviderInfoCard(req: ServiceRequest) {
             InfoRow("👤 নাম",    req.providerName)
             InfoRow("📞 ফোন",    req.providerPhone)
             InfoRow("⭐ রেটিং", "%.1f / 5.0".format(req.providerRating))
-            InfoRow("💰 ফি",     "৳ ${req.providerBaseFee.toInt()}")
+            if (req.agreedPrice > 0)
+                InfoRow("💰 ${AppStrings.agreedPriceLabel}", "৳ ${req.agreedPrice.toInt()}")
+            else
+                InfoRow("💰 ফি", "৳ ${req.providerBaseFee.toInt()}")
         }
     }
 }

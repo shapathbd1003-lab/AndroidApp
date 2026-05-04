@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.example.serviceapp.navigation.Screen
+import com.example.serviceapp.ui.components.OsmMapPickerDialog
 import com.example.serviceapp.utils.AppLanguage
 import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.utils.LocationHelper
@@ -54,6 +55,7 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
     var minRating           by remember { mutableStateOf(0.0) }
     var maxPrice            by remember { mutableStateOf(0.0) }
     var locationLoading     by remember { mutableStateOf(false) }
+    var showMapPicker       by remember { mutableStateOf(false) }
 
     val context  = LocalContext.current
     val scope    = rememberCoroutineScope()
@@ -142,6 +144,19 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                 OutlinedButton(onClick = { showLocationOffDialog = false }) {
                     Text(if (AppStrings.lang == AppLanguage.BN) "বাতিল" else "Cancel")
                 }
+            }
+        )
+    }
+
+    // OSM Map Picker dialog
+    if (showMapPicker) {
+        OsmMapPickerDialog(
+            onDismiss  = { showMapPicker = false },
+            onSelected = { addr, lat, lng ->
+                address     = addr
+                locationLat = lat
+                locationLng = lng
+                showMapPicker = false
             }
         )
     }
@@ -287,21 +302,32 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                                     modifier = Modifier.background(purple, RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 2.dp))
                                 Text(AppStrings.addressLabel, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242))
                             }
-                            OutlinedButton(
-                                onClick = { fetchLocation() }, enabled = !locationLoading,
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = purple),
-                                modifier = Modifier.height(32.dp)
-                            ) {
-                                if (locationLoading) {
-                                    CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = purple)
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(AppStrings.fetchingLocation, fontSize = 12.sp)
-                                } else {
-                                    Icon(Icons.Default.MyLocation, null, modifier = Modifier.size(14.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(AppStrings.autoLocationBtn, fontSize = 12.sp)
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                OutlinedButton(
+                                    onClick = { fetchLocation() }, enabled = !locationLoading,
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = purple),
+                                    modifier = Modifier.height(32.dp)
+                                ) {
+                                    if (locationLoading) {
+                                        CircularProgressIndicator(modifier = Modifier.size(13.dp), strokeWidth = 2.dp, color = purple)
+                                    } else {
+                                        Icon(Icons.Default.MyLocation, null, modifier = Modifier.size(13.dp))
+                                        Spacer(Modifier.width(3.dp))
+                                        Text(AppStrings.autoLocationBtn, fontSize = 11.sp)
+                                    }
+                                }
+                                OutlinedButton(
+                                    onClick = { showMapPicker = true },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = purple),
+                                    modifier = Modifier.height(32.dp)
+                                ) {
+                                    Icon(Icons.Default.Map, null, modifier = Modifier.size(13.dp))
+                                    Spacer(Modifier.width(3.dp))
+                                    Text(if (isBn) "ম্যাপ" else "Map", fontSize = 11.sp)
                                 }
                             }
                         }

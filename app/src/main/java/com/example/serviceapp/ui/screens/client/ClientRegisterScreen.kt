@@ -58,8 +58,9 @@ fun ClientRegisterScreen(vm: ClientViewModel, nav: NavController) {
         ActivityResultContracts.PickVisualMedia()
     ) { uri -> uri?.let { photoUri = it.toString() } }
 
-    val purple = Color(0xFF6A1B9A)
-    val canSubmit = name.isNotBlank() && phone.isNotBlank() &&
+    val purple     = Color(0xFF6A1B9A)
+    val phoneValid = phone.trim().length == 11
+    val canSubmit  = name.isNotBlank() && phoneValid &&
                     email.isNotBlank() && password.isNotBlank() && confirm.isNotBlank()
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = purple, focusedLabelColor = purple, cursorColor = purple
@@ -174,6 +175,12 @@ fun ClientRegisterScreen(vm: ClientViewModel, nav: NavController) {
                 OutlinedTextField(value = phone, onValueChange = { phone = it },
                     label = { Text("ফোন নম্বর *") },
                     leadingIcon = { Icon(Icons.Default.Phone, null, tint = purple) },
+                    isError = phone.isNotEmpty() && !phoneValid,
+                    supportingText = {
+                        if (phone.isNotEmpty() && !phoneValid)
+                            Text(AppStrings.phoneMustBe11, color = Color(0xFFC62828))
+                        else Text("${phone.trim().length}/11", color = Color(0xFF9E9E9E))
+                    },
                     modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     colors = fieldColors)

@@ -101,8 +101,9 @@ fun RegisterScreen(vm: MainViewModel, nav: NavController) {
         focusedLabelColor = AppColors.Primary,
         cursorColor = AppColors.Primary
     )
-    val baseFee    = baseFeeText.toDoubleOrNull() ?: 0.0
-    val canProceed = name.isNotBlank() && phone.isNotBlank() && email.isNotBlank() &&
+    val baseFee      = baseFeeText.toDoubleOrNull() ?: 0.0
+    val phoneValid   = phone.trim().length == 11
+    val canProceed   = name.isNotBlank() && phoneValid && email.isNotBlank() &&
             nid.isNotBlank() && selectedService.isNotEmpty() && baseFee > 0 &&
             password.isNotBlank() && confirmPassword.isNotBlank()
 
@@ -166,6 +167,13 @@ fun RegisterScreen(vm: MainViewModel, nav: NavController) {
                     onValueChange = { phone = it },
                     label = { Text(AppStrings.phoneNumber) },
                     leadingIcon = { Icon(Icons.Default.Phone, null, tint = AppColors.Primary) },
+                    isError = phone.isNotEmpty() && !phoneValid,
+                    supportingText = {
+                        if (phone.isNotEmpty() && !phoneValid)
+                            Text(AppStrings.phoneMustBe11, color = AppColors.Error)
+                        else
+                            Text("${phone.trim().length}/11", color = AppColors.TextSecondary)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = fieldColors,

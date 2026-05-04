@@ -143,16 +143,21 @@ object ClientRepository {
                     "createdAt"   to FieldValue.serverTimestamp()
                 )).await()
 
-                // Update provider's average rating from all reviews
+                // Update provider's average rating + bonus points
                 val allReviews = db.collection("reviews")
                     .whereEqualTo("providerId", req.providerId)
                     .get().await()
                 val ratings = allReviews.documents.mapNotNull { it.getLong("rating")?.toInt() }.filter { it > 0 }
                 if (ratings.isNotEmpty()) {
-                    val avg = ratings.average()
-                    db.collection("providers").document(req.providerId).update(
-                        mapOf("rating" to avg, "completedJobs" to ratings.size)
-                    ).await()
+                    val avg        = ratings.average()
+                    val bonusPoints = when (rating) { 5 -> 100; 4 -> 30; else -> 0 }
+                    val provDoc    = db.collection("providers").document(req.providerId).get().await()
+                    val curPoints  = (provDoc.getLong("points") ?: 500).toInt()
+                    db.collection("providers").document(req.providerId).update(mapOf(
+                        "rating"       to avg,
+                        "completedJobs" to ratings.size,
+                        "points"       to curPoints + bonusPoints
+                    )).await()
                 }
             }
         }
@@ -167,10 +172,12 @@ object ClientRepository {
             .addSnapshotListener { snaps, _ ->
                 requests.clear()
                 snaps?.documents?.forEach { doc ->
+                    // Skip soft-deleted records
+                    if (doc.getBoolean("clientDeleted") == true) return@forEach
+
                     val status = doc.getString("status") ?: "pending"
                     val rid    = doc.id
 
-                    // Fire notification once when provider is matched
                     if (status == "awaiting_approval" && rid !in notifiedRequests) {
                         notifiedRequests.add(rid)
                         NotificationHelper.showProviderFoundNotification(
@@ -203,13 +210,17 @@ object ClientRepository {
                         providerBaseFee = doc.getDouble("providerBaseFee") ?: 0.0,
                         rating          = (doc.getLong("rating")  ?: 0).toInt(),
                         reviewComment   = doc.getString("reviewComment")  ?: "",
-                        problemType     = doc.getString("problemType")    ?: "normal"
+                        problemType     = doc.getString("problemType")    ?: "normal",
+                        lat             = doc.getDouble("lat")            ?: 0.0,
+                        lng             = doc.getDouble("lng")            ?: 0.0,
+                        agreedPrice     = doc.getDouble("agreedPrice")    ?: 0.0
                     ))
                 }
             }
     }
 
     // ── Delete history (completed + cancelled requests) ───────────────────────
+    // Soft delete — marks clientDeleted=true, does NOT delete the document
     suspend fun clearHistory(): Result<Unit> = runCatching {
         val uid = client?.id ?: error("Not logged in")
         val snaps = db.collection("requests")
@@ -217,7 +228,7 @@ object ClientRepository {
             .whereIn("status", listOf("completed", "cancelled", "no_provider"))
             .get().await()
         val batch = db.batch()
-        snaps.documents.forEach { batch.delete(it.reference) }
+        snaps.documents.forEach { batch.update(it.reference, "clientDeleted", true) }
         batch.commit().await()
     }
 

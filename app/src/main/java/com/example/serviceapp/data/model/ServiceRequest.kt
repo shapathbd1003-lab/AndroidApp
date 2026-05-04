@@ -21,5 +21,12 @@ data class ServiceRequest(
     var reviewComment:   String = "",
     val problemType:     String = "normal",
     val lat:             Double = 0.0,
-    val lng:             Double = 0.0
+    val lng:             Double = 0.0,
+    // Soft delete — deleting from one side doesn't affect the other
+    val clientDeleted:   Boolean = false,
+    val providerDeleted: Boolean = false,
+    // Custom price set by provider (may exceed baseFee)
+    var agreedPrice:     Double = 0.0,
+    // on_the_way added between accepted and completed
+    // status: pending|awaiting_approval|accepted|on_the_way|completed|cancelled
 )
