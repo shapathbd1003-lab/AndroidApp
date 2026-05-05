@@ -172,6 +172,42 @@ object AppStrings {
     val rateAndReview      get() = if (isBn) "রেটিং ও রিভিউ দিন" else "Rate & Review"
     val yourReview         get() = if (isBn) "আপনার রিভিউ" else "Your Review"
     val reviewHint         get() = if (isBn) "আপনার অভিজ্ঞতা লিখুন (ঐচ্ছিক)" else "Write your experience (optional)"
+
+    // ── Request status labels (dashboard & detail) ───────────────────────────
+    val statusProviderFound    get() = if (isBn) "🔍 মিস্ত্রি পাওয়া গেছে!" else "🔍 Provider Found!"
+    val statusProviderConfirmed get() = if (isBn) "✅ মিস্ত্রি নিশ্চিত" else "✅ Provider Confirmed"
+    val statusCompleted        get() = if (isBn) "☑️ সম্পন্ন" else "☑️ Completed"
+    val statusCancelled        get() = if (isBn) "❌ বাতিল" else "❌ Cancelled"
+    val statusPending          get() = if (isBn) "⏳ অপেক্ষমান..." else "⏳ Pending..."
+    val statusDecide           get() = if (isBn) "🔍 সিদ্ধান্ত নিন" else "🔍 Decide"
+    val statusConfirmed        get() = if (isBn) "✅ নিশ্চিত" else "✅ Confirmed"
+    val statusNotMatched       get() = if (isBn) "😔 মিলেনি" else "😔 Not matched"
+
+    // ── Request detail labels ────────────────────────────────────────────────
+    val requestNotFound        get() = if (isBn) "অনুরোধ পাওয়া যায়নি" else "Request not found"
+    val decisionNeeded         get() = if (isBn) "মিস্ত্রি পাওয়া গেছে — আপনার সিদ্ধান্ত নিন" else "Provider found — make your decision"
+    val providerStarting       get() = if (isBn) "মিস্ত্রি নিশ্চিত — কাজ শুরু হচ্ছে!" else "Provider confirmed — starting work!"
+    val jobDone                get() = if (isBn) "কাজ সম্পন্ন!" else "Job complete!"
+    val requestCancelledMsg    get() = if (isBn) "অনুরোধ বাতিল হয়েছে" else "Request cancelled"
+    val hireQuestion           get() = if (isBn) "এই মিস্ত্রিকে নিয়োগ দিতে চান? নিচে সম্মতি দিন।" else "Want to hire this provider? Confirm below."
+    val completedJobsLabel     get() = if (isBn) "✅ সম্পন্ন কাজ" else "✅ Completed Jobs"
+    val providerLabel          get() = if (isBn) "মিস্ত্রি" else "Provider"
+    val ratingMin              get() = if (isBn) "রেটিং ≥" else "Rating ≥"
+    val feeMax                 get() = if (isBn) "ফি ≤ ৳" else "Fee ≤ ৳"
+
+    // ── Star rating labels ───────────────────────────────────────────────────
+    fun starLabel(stars: Int) = when (stars) {
+        1    -> if (isBn) "খুব খারাপ 😞"  else "Very bad 😞"
+        2    -> if (isBn) "খারাপ 😕"       else "Bad 😕"
+        3    -> if (isBn) "ঠিকঠাক 😐"      else "Okay 😐"
+        4    -> if (isBn) "ভালো 😊"        else "Good 😊"
+        else -> if (isBn) "চমৎকার! 🤩"    else "Excellent! 🤩"
+    }
+
+    // ── Job list ─────────────────────────────────────────────────────────────
+    val nearestSorted get() = if (isBn) "টি কাজ — নিকটতম থেকে সাজানো" else "jobs — sorted by nearest"
+
+    // ── Client screens ────────────────────────────────────────────────────────
     val totalRequests      get() = if (isBn) "মোট অনুরোধ" else "Total Requests"
     val avgRating          get() = if (isBn) "গড় রেটিং" else "Avg Rating"
     val clientHistory      get() = if (isBn) "সেবার ইতিহাস" else "Service History"

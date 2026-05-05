@@ -48,13 +48,13 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                 IconButton(onClick = { nav.popBackStack() }) {
                     Icon(Icons.Default.ArrowBack, null, tint = Color.White)
                 }
-                Text("অনুরোধের বিবরণ", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(AppStrings.requestDetailTitle, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
         }
 
         if (request == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("অনুরোধ পাওয়া যায়নি", color = Color(0xFF757575))
+                Text(AppStrings.requestNotFound, color = Color(0xFF757575))
             }
             return@Column
         }
@@ -87,7 +87,7 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                     shape = RoundedCornerShape(14.dp),
                     border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFC62828))
                 ) {
-                    Text("অনুরোধ বাতিল করুন", fontSize = 15.sp, color = Color(0xFFC62828), fontWeight = FontWeight.SemiBold)
+                    Text(AppStrings.cancelRequestBtn, fontSize = 15.sp, color = Color(0xFFC62828), fontWeight = FontWeight.SemiBold)
                 }
                 "awaiting_approval" -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedButton(
@@ -96,7 +96,7 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                         shape = RoundedCornerShape(14.dp),
                         border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFC62828))
                     ) {
-                        Text("❌ না, ধন্যবাদ", fontSize = 14.sp, color = Color(0xFFC62828))
+                        Text(AppStrings.disagreeBtn, fontSize = 14.sp, color = Color(0xFFC62828))
                     }
                     Button(
                         onClick = { vm.agreeToProvider(request.id) },
@@ -104,7 +104,7 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
                     ) {
-                        Text("✅ রাজি আছি", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Text(AppStrings.agreeBtn, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
                 }
                 "accepted" -> Button(
@@ -113,7 +113,7 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
                 ) {
-                    Text("✅ কাজ সম্পন্ন হয়েছে", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    Text(AppStrings.markDoneBtn, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 }
                 "completed" -> if (request.rating == 0) Button(
                     onClick = {
@@ -126,7 +126,7 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                     enabled = selectedRating > 0,
                     colors = ButtonDefaults.buttonColors(containerColor = purple, disabledContainerColor = Color(0xFFBDBDBD))
                 ) {
-                    Text("রেটিং ও রিভিউ জমা দিন ⭐", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    Text(AppStrings.submitReviewBtn, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -136,11 +136,11 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
 @Composable
 private fun StatusCard(req: ServiceRequest) {
     val (bg, fg, emoji, label) = when (req.status) {
-        "awaiting_approval" -> listOf(Color(0xFFE8EAF6), Color(0xFF1A237E), "🔍", "মিস্ত্রি পাওয়া গেছে — আপনার সিদ্ধান্ত নিন")
-        "accepted"          -> listOf(Color(0xFFE3F2FD), Color(0xFF1565C0), "🔧", "মিস্ত্রি নিশ্চিত — কাজ শুরু হচ্ছে!")
+        "awaiting_approval" -> listOf(Color(0xFFE8EAF6), Color(0xFF1A237E), "🔍", AppStrings.decisionNeeded)
+        "accepted"          -> listOf(Color(0xFFE3F2FD), Color(0xFF1565C0), "🔧", AppStrings.providerStarting)
         "on_the_way"        -> listOf(Color(0xFFE8EAF6), Color(0xFF1A237E), "🛵", AppStrings.providerOnTheWay)
-        "completed"         -> listOf(Color(0xFFE8F5E9), Color(0xFF2E7D32), "☑️", "কাজ সম্পন্ন!")
-        "cancelled"         -> listOf(Color(0xFFFFEBEE), Color(0xFFC62828), "❌", "অনুরোধ বাতিল হয়েছে")
+        "completed"         -> listOf(Color(0xFFE8F5E9), Color(0xFF2E7D32), "☑️", AppStrings.jobDone)
+        "cancelled"         -> listOf(Color(0xFFFFEBEE), Color(0xFFC62828), "❌", AppStrings.requestCancelledMsg)
         else                -> listOf(Color(0xFFFFF8E1), Color(0xFFE65100), "⏳", AppStrings.waitingForProvider)
     }
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = bg as Color)) {
@@ -184,9 +184,9 @@ private fun InfoCard(req: ServiceRequest) {
 private fun FilterSummaryCard(req: ServiceRequest) {
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFF3E5F5)), elevation = CardDefaults.cardElevation(1.dp)) {
         Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("🔍 ফিল্টার:", fontSize = 12.sp, color = Color(0xFF6A1B9A), fontWeight = FontWeight.SemiBold)
-            if (req.minRating > 0) Text("রেটিং ≥ ${req.minRating}", fontSize = 12.sp, color = Color(0xFF424242))
-            if (req.maxPrice > 0)  Text("ফি ≤ ৳${req.maxPrice.toInt()}", fontSize = 12.sp, color = Color(0xFF424242))
+            Text(AppStrings.filterLabel, fontSize = 12.sp, color = Color(0xFF6A1B9A), fontWeight = FontWeight.SemiBold)
+            if (req.minRating > 0) Text("${AppStrings.ratingMin} ${req.minRating}", fontSize = 12.sp, color = Color(0xFF424242))
+            if (req.maxPrice > 0)  Text("${AppStrings.feeMax}${req.maxPrice.toInt()}", fontSize = 12.sp, color = Color(0xFF424242))
         }
     }
 }
@@ -222,15 +222,15 @@ private fun ProviderApprovalCard(req: ServiceRequest) {
                 }
             }
             if (completedJobs >= 0) {
-                InfoRow("✅ সম্পন্ন কাজ", "$completedJobs টি কাজ / $completedJobs jobs")
+                InfoRow(AppStrings.completedJobsLabel, "$completedJobs ${AppStrings.jobs}")
             }
             InfoRow("💰 ${AppStrings.providerFeeLbl}", "৳ ${req.providerBaseFee.toInt()} প্রতি সেবায়")
             Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFFE8F5E9)) {
                 Text(
                     if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN)
-                        "এই মিস্ত্রিকে নিয়োগ দিতে চান? নিচে সম্মতি দিন।"
+                        AppStrings.hireQuestion
                     else
-                        "Want to hire this provider? Confirm below.",
+                        AppStrings.hireQuestion,
                     fontSize = 13.sp, color = Color(0xFF2E7D32),
                     modifier = Modifier.padding(10.dp)
                 )
@@ -243,15 +243,15 @@ private fun ProviderApprovalCard(req: ServiceRequest) {
 private fun ProviderInfoCard(req: ServiceRequest) {
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFEDE7F6)), elevation = CardDefaults.cardElevation(2.dp)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("নিযুক্ত মিস্ত্রি", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF6A1B9A))
+            Text(AppStrings.assignedProvider, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF6A1B9A))
             HorizontalDivider(color = Color(0xFF6A1B9A).copy(alpha = 0.2f))
-            InfoRow("👤 নাম",    req.providerName)
-            InfoRow("📞 ফোন",    req.providerPhone)
-            InfoRow("⭐ রেটিং", "%.1f / 5.0".format(req.providerRating))
+            InfoRow("👤 ${AppStrings.providerName}",    req.providerName)
+            InfoRow("📞 ${AppStrings.providerPhone}",    req.providerPhone)
+            InfoRow("⭐ ${AppStrings.providerRatingLbl}", "%.1f / 5.0".format(req.providerRating))
             if (req.agreedPrice > 0)
                 InfoRow("💰 ${AppStrings.agreedPriceLabel}", "৳ ${req.agreedPrice.toInt()}")
             else
-                InfoRow("💰 ফি", "৳ ${req.providerBaseFee.toInt()}")
+                InfoRow("💰 ${AppStrings.providerFeeLbl}", "৳ ${req.providerBaseFee.toInt()}")
         }
     }
 }
@@ -260,7 +260,7 @@ private fun ProviderInfoCard(req: ServiceRequest) {
 private fun RatingCard(selected: Int, comment: String, onRate: (Int) -> Unit, onComment: (String) -> Unit) {
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(2.dp)) {
         Column(Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("রেটিং ও রিভিউ দিন", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242))
+            Text(AppStrings.rateAndReview, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242))
 
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 (1..5).forEach { star ->
@@ -275,7 +275,7 @@ private fun RatingCard(selected: Int, comment: String, onRate: (Int) -> Unit, on
                 }
             }
             if (selected > 0) {
-                val label = when (selected) { 1 -> "খুব খারাপ 😞" 2 -> "খারাপ 😕" 3 -> "ঠিকঠাক 😐" 4 -> "ভালো 😊" else -> "চমৎকার! 🤩" }
+                val label = when (selected) { 1 -> AppStrings.starLabel(1) 2 -> AppStrings.starLabel(2) 3 -> AppStrings.starLabel(3) 4 -> AppStrings.starLabel(4) else -> AppStrings.starLabel(5) }
                 Text(label, fontSize = 14.sp, color = Color(0xFFFFA000), fontWeight = FontWeight.SemiBold)
             }
 
@@ -296,7 +296,7 @@ private fun RatingCard(selected: Int, comment: String, onRate: (Int) -> Unit, on
 private fun CompletedReviewCard(req: ServiceRequest) {
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("আপনার রিভিউ", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+            Text(AppStrings.yourReview, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
             Text("${"⭐".repeat(req.rating)} (${req.rating}/5)", fontSize = 16.sp)
             if (req.reviewComment.isNotBlank()) Text("\"${req.reviewComment}\"", fontSize = 13.sp, color = Color(0xFF424242))
         }

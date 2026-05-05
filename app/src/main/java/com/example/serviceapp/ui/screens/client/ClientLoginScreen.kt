@@ -1,4 +1,4 @@
-package com.example.serviceapp.ui.screens.client
+﻿package com.example.serviceapp.ui.screens.client
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -49,7 +49,7 @@ fun ClientLoginScreen(vm: ClientViewModel, nav: NavController) {
             IconButton(onClick = { nav.popBackStack() }) {
                 Icon(Icons.Default.ArrowBack, null, tint = Color.White)
             }
-            Text("গ্রাহক লগইন", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(AppStrings.clientLoginTitle, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
         Spacer(Modifier.height(20.dp))
 
@@ -68,14 +68,14 @@ fun ClientLoginScreen(vm: ClientViewModel, nav: NavController) {
                 }
 
                 OutlinedTextField(value = email, onValueChange = { email = it; vm.clearErrors() },
-                    label = { Text("ইমেইল") },
+                    label = { Text(AppStrings.emailRequired) },
                     leadingIcon = { Icon(Icons.Default.Email, null, tint = purple) },
                     modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     colors = fieldColors)
 
                 OutlinedTextField(value = password, onValueChange = { password = it; vm.clearErrors() },
-                    label = { Text("পাসওয়ার্ড") },
+                    label = { Text(AppStrings.password) },
                     leadingIcon = { Icon(Icons.Default.Lock, null, tint = purple) },
                     trailingIcon = {
                         IconButton(onClick = { showPass = !showPass }) {
@@ -103,15 +103,15 @@ fun ClientLoginScreen(vm: ClientViewModel, nav: NavController) {
                     colors = ButtonDefaults.buttonColors(containerColor = purple, disabledContainerColor = Color(0xFFBDBDBD))
                 ) {
                     if (vm.loginLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-                    else Text("সাইন ইন →", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    else Text(AppStrings.signInClient, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 }
 
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                    Text("অ্যাকাউন্ট নেই? ", fontSize = 13.sp, color = Color(0xFF9E9E9E))
+                    Text(AppStrings.noAccount, fontSize = 13.sp, color = Color(0xFF9E9E9E))
                     TextButton(onClick = {
                         nav.navigate(Screen.ClientRegister.route) { popUpTo(Screen.ClientLogin.route) { inclusive = true } }
                     }) {
-                        Text("নিবন্ধন করুন", fontSize = 13.sp, color = purple, fontWeight = FontWeight.Bold)
+                        Text(AppStrings.registerNow, fontSize = 13.sp, color = purple, fontWeight = FontWeight.Bold)
                     }
                 }
             }

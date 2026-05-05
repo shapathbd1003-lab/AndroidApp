@@ -51,7 +51,7 @@ fun ClientProfileScreen(vm: ClientViewModel, nav: NavController) {
                 IconButton(onClick = { nav.popBackStack() }) {
                     Icon(Icons.Default.ArrowBack, null, tint = Color.White)
                 }
-                Text("আমার প্রোফাইল", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(AppStrings.clientProfileTitle, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
             IconButton(
                 onClick = { vm.logout(); nav.navigate(Screen.RoleSelection.route) { popUpTo(0) { inclusive = true } } },
@@ -102,16 +102,16 @@ fun ClientProfileScreen(vm: ClientViewModel, nav: NavController) {
             // Stats row
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    StatCard(Modifier.weight(1f), "${vm.requests.size}", "মোট অনুরোধ", Color(0xFF1A237E), Color(0xFFE8EAF6))
-                    StatCard(Modifier.weight(1f), "${history.count { it.status == "completed" }}", "সম্পন্ন", Color(0xFF2E7D32), Color(0xFFE8F5E9))
-                    StatCard(Modifier.weight(1f), if (avgRating > 0) "%.1f ⭐".format(avgRating) else "—", "গড় রেটিং", Color(0xFFE65100), Color(0xFFFFF3E0))
+                    StatCard(Modifier.weight(1f), "${vm.requests.size}", AppStrings.totalRequests, Color(0xFF1A237E), Color(0xFFE8EAF6))
+                    StatCard(Modifier.weight(1f), "${history.count { it.status == "completed" }}", AppStrings.statusCompleted, Color(0xFF2E7D32), Color(0xFFE8F5E9))
+                    StatCard(Modifier.weight(1f), if (avgRating > 0) "%.1f ⭐".format(avgRating) else "—", AppStrings.avgRating, Color(0xFFE65100), Color(0xFFFFF3E0))
                 }
             }
 
             // Active requests
             if (active.isNotEmpty()) {
                 item {
-                    Text("চলমান অনুরোধ (${active.size})", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242))
+                    Text("${AppStrings.activeRequests} (${active.size})", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242))
                 }
                 items(active) { req ->
                     MiniRequestCard(req, purple) { nav.navigate(Screen.ClientRequestDetail.createRoute(req.id)) }
@@ -126,7 +126,7 @@ fun ClientProfileScreen(vm: ClientViewModel, nav: NavController) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "সেবার ইতিহাস (${history.size})",
+                        "${AppStrings.clientHistory} (${history.size})",
                         fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242)
                     )
                     if (history.isNotEmpty()) {
@@ -136,7 +136,7 @@ fun ClientProfileScreen(vm: ClientViewModel, nav: NavController) {
                             modifier = Modifier.clickable { showDeleteConfirm = true }
                         ) {
                             Text(
-                                "🗑 মুছুন",
+                                AppStrings.deleteHistoryBtn,
                                 fontSize = 12.sp,
                                 color = Color(0xFFC62828),
                                 fontWeight = FontWeight.SemiBold,
@@ -151,7 +151,7 @@ fun ClientProfileScreen(vm: ClientViewModel, nav: NavController) {
                 item {
                     Card(shape = RoundedCornerShape(14.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                         Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                            Text("এখনো কোনো ইতিহাস নেই", fontSize = 14.sp, color = Color(0xFF9E9E9E))
+                            Text(AppStrings.noHistoryClient, fontSize = 14.sp, color = Color(0xFF9E9E9E))
                         }
                     }
                 }
@@ -169,16 +169,16 @@ fun ClientProfileScreen(vm: ClientViewModel, nav: NavController) {
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title   = { Text("ইতিহাস মুছে ফেলুন?") },
-            text    = { Text("সব সম্পন্ন ও বাতিল অনুরোধ মুছে যাবে। এটি পূর্বাবস্থায় ফেরানো যাবে না।") },
+            title   = { Text(AppStrings.deleteHistoryTitle) },
+            text    = { Text(AppStrings.deleteHistoryMsg) },
             confirmButton = {
                 Button(
                     onClick = { vm.clearHistory(); showDeleteConfirm = false },
                     colors  = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828))
-                ) { Text("হ্যাঁ, মুছুন") }
+                ) { Text(AppStrings.yesDelete) }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showDeleteConfirm = false }) { Text("বাতিল") }
+                OutlinedButton(onClick = { showDeleteConfirm = false }) { Text(AppStrings.cancelBtn) }
             }
         )
     }
@@ -208,9 +208,9 @@ private fun MiniRequestCard(req: ServiceRequest, purple: Color, onClick: () -> U
                 Text(req.address, fontSize = 12.sp, color = Color(0xFF9E9E9E))
             }
             val (color, label) = when (req.status) {
-                "awaiting_approval" -> Color(0xFF1A237E) to "🔍 সিদ্ধান্ত নিন"
-                "accepted"          -> Color(0xFF1565C0) to "✅ নিশ্চিত"
-                else                -> Color(0xFFE65100) to "⏳ অপেক্ষমান"
+                "awaiting_approval" -> Color(0xFF1A237E) to AppStrings.statusDecide
+                "accepted"          -> Color(0xFF1565C0) to AppStrings.statusConfirmed
+                else                -> Color(0xFFE65100) to AppStrings.pending
             }
             Surface(shape = RoundedCornerShape(20.dp), color = color.copy(alpha = 0.1f)) {
                 Text(label, fontSize = 11.sp, color = color, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
@@ -222,9 +222,9 @@ private fun MiniRequestCard(req: ServiceRequest, purple: Color, onClick: () -> U
 @Composable
 private fun HistoryCard(req: ServiceRequest, nav: NavController) {
     val (bg, label) = when (req.status) {
-        "completed"   -> Color(0xFFE8F5E9) to "☑️ সম্পন্ন"
-        "cancelled"   -> Color(0xFFFFEBEE) to "❌ বাতিল"
-        else          -> Color(0xFFFFF3E0) to "😔 মিলেনি"
+        "completed"   -> Color(0xFFE8F5E9) to AppStrings.statusCompleted
+        "cancelled"   -> Color(0xFFFFEBEE) to AppStrings.statusCancelled
+        else          -> Color(0xFFFFF3E0) to AppStrings.statusNotMatched
     }
     Card(
         modifier  = Modifier.fillMaxWidth().clickable { nav.navigate(Screen.ClientRequestDetail.createRoute(req.id)) },

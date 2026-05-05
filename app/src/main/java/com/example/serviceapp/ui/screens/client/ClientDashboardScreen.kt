@@ -104,11 +104,11 @@ fun ClientDashboardScreen(vm: ClientViewModel, nav: NavController) {
 @Composable
 private fun RequestCard(req: ServiceRequest, onClick: () -> Unit) {
     val (statusColor, statusLabel) = when (req.status) {
-        "awaiting_approval" -> Color(0xFF1A237E) to "🔍 মিস্ত্রি পাওয়া গেছে!"
-        "accepted"          -> Color(0xFF1565C0) to "✅ মিস্ত্রি নিশ্চিত"
-        "completed"         -> Color(0xFF2E7D32) to "☑️ সম্পন্ন"
-        "cancelled"         -> Color(0xFF757575) to "❌ বাতিল"
-        else                -> Color(0xFFE65100) to "⏳ অপেক্ষমান..."
+        "awaiting_approval" -> Color(0xFF1A237E) to AppStrings.statusProviderFound
+        "accepted"          -> Color(0xFF1565C0) to AppStrings.statusProviderConfirmed
+        "completed"         -> Color(0xFF2E7D32) to AppStrings.statusCompleted
+        "cancelled"         -> Color(0xFF757575) to AppStrings.statusCancelled
+        else                -> Color(0xFFE65100) to AppStrings.statusPending
     }
 
     Card(

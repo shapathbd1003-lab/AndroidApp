@@ -1,4 +1,4 @@
-package com.example.serviceapp.ui.screens.jobs
+﻿package com.example.serviceapp.ui.screens.jobs
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -72,9 +72,9 @@ fun JobListScreen(vm: MainViewModel, nav: NavController) {
                         Icon(Icons.Default.LocationOn, null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(13.dp))
                         Text(
                             if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN)
-                                "$pendingCount টি কাজ — নিকটতম থেকে সাজানো"
+                                "$pendingCount ${AppStrings.nearestSorted}"
                             else
-                                "$pendingCount jobs — sorted by nearest",
+                                "$pendingCount ${AppStrings.nearestSorted}",
                             fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f)
                         )
                     } else {

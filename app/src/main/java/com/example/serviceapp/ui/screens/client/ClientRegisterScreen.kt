@@ -1,4 +1,4 @@
-package com.example.serviceapp.ui.screens.client
+﻿package com.example.serviceapp.ui.screens.client
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.serviceapp.navigation.Screen
+import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.viewmodel.ClientViewModel
 
 private val AVATAR_COLORS = listOf(
@@ -80,7 +81,7 @@ fun ClientRegisterScreen(vm: ClientViewModel, nav: NavController) {
             IconButton(onClick = { nav.popBackStack() }) {
                 Icon(Icons.Default.ArrowBack, null, tint = Color.White)
             }
-            Text("গ্রাহক নিবন্ধন", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(AppStrings.clientRegTitle, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
         Spacer(Modifier.height(16.dp))
 
@@ -105,7 +106,7 @@ fun ClientRegisterScreen(vm: ClientViewModel, nav: NavController) {
                 }
 
                 // ── Avatar picker ──────────────────────────────────────
-                Text("প্রোফাইল ছবি", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF424242))
+                Text(AppStrings.profilePhoto2, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF424242))
 
                 // Photo preview
                 Box(Modifier.align(Alignment.CenterHorizontally)) {
@@ -160,20 +161,20 @@ fun ClientRegisterScreen(vm: ClientViewModel, nav: NavController) {
                 ) {
                     Icon(Icons.Default.AddPhotoAlternate, null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("গ্যালারি থেকে আপলোড", fontSize = 13.sp)
+                    Text(AppStrings.uploadFromGallery2, fontSize = 13.sp)
                 }
 
                 HorizontalDivider()
 
                 // ── Form fields ────────────────────────────────────────
                 OutlinedTextField(value = name, onValueChange = { name = it; localError = ""; vm.clearErrors() },
-                    label = { Text("পুরো নাম *") },
+                    label = { Text(AppStrings.fullName) },
                     leadingIcon = { Icon(Icons.Default.Person, null, tint = purple) },
                     modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
                     singleLine = true, colors = fieldColors)
 
                 OutlinedTextField(value = phone, onValueChange = { phone = it },
-                    label = { Text("ফোন নম্বর *") },
+                    label = { Text(AppStrings.phoneNumber) },
                     leadingIcon = { Icon(Icons.Default.Phone, null, tint = purple) },
                     isError = phone.isNotEmpty() && !phoneValid,
                     supportingText = {
@@ -186,14 +187,14 @@ fun ClientRegisterScreen(vm: ClientViewModel, nav: NavController) {
                     colors = fieldColors)
 
                 OutlinedTextField(value = email, onValueChange = { email = it; localError = ""; vm.clearErrors() },
-                    label = { Text("ইমেইল *") },
+                    label = { Text(AppStrings.emailRequired) },
                     leadingIcon = { Icon(Icons.Default.Email, null, tint = purple) },
                     modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     colors = fieldColors)
 
                 OutlinedTextField(value = password, onValueChange = { password = it; localError = "" },
-                    label = { Text("পাসওয়ার্ড * (কমপক্ষে ৬ অক্ষর)") },
+                    label = { Text(AppStrings.password) },
                     leadingIcon = { Icon(Icons.Default.Lock, null, tint = purple) },
                     trailingIcon = {
                         IconButton(onClick = { showPass = !showPass }) {
@@ -202,17 +203,17 @@ fun ClientRegisterScreen(vm: ClientViewModel, nav: NavController) {
                     },
                     visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(),
                     isError = password.isNotEmpty() && password.length < 6,
-                    supportingText = { if (password.isNotEmpty() && password.length < 6) Text("কমপক্ষে ৬ অক্ষর দিন", color = Color(0xFFC62828)) },
+                    supportingText = { if (password.isNotEmpty() && password.length < 6) Text(AppStrings.passwordHint, color = Color(0xFFC62828)) },
                     modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     colors = fieldColors)
 
                 OutlinedTextField(value = confirm, onValueChange = { confirm = it; localError = "" },
-                    label = { Text("পাসওয়ার্ড নিশ্চিত করুন *") },
+                    label = { Text(AppStrings.confirmPassword) },
                     leadingIcon = { Icon(Icons.Default.Lock, null, tint = purple) },
                     visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(),
                     isError = confirm.isNotEmpty() && password != confirm,
-                    supportingText = { if (confirm.isNotEmpty() && password != confirm) Text("পাসওয়ার্ড মিলছে না", color = Color(0xFFC62828)) },
+                    supportingText = { if (confirm.isNotEmpty() && password != confirm) Text(AppStrings.passwordMismatch, color = Color(0xFFC62828)) },
                     modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     colors = fieldColors)
@@ -221,8 +222,8 @@ fun ClientRegisterScreen(vm: ClientViewModel, nav: NavController) {
                     onClick = {
                         localError = ""
                         when {
-                            password.length < 6   -> localError = "পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে।"
-                            password != confirm    -> localError = "পাসওয়ার্ড মিলছে না।"
+                            password.length < 6   -> localError = AppStrings.passwordHint
+                            password != confirm    -> localError = AppStrings.passwordMismatch
                             else -> {
                                 val avatarStr = if (photoUri.isNotBlank()) photoUri
                                                else "${selectedAvatar.first}:${selectedAvatar.second}"
@@ -245,7 +246,7 @@ fun ClientRegisterScreen(vm: ClientViewModel, nav: NavController) {
                     if (vm.registerLoading) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                     } else {
-                        Text("অ্যাকাউন্ট তৈরি করুন →", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                        Text(AppStrings.createAccountBtn, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
