@@ -104,11 +104,15 @@ fun ClientDashboardScreen(vm: ClientViewModel, nav: NavController) {
 @Composable
 private fun RequestCard(req: ServiceRequest, onClick: () -> Unit) {
     val (statusColor, statusLabel) = when (req.status) {
-        "awaiting_approval" -> Color(0xFF1A237E) to AppStrings.statusProviderFound
-        "accepted"          -> Color(0xFF1565C0) to AppStrings.statusProviderConfirmed
-        "completed"         -> Color(0xFF2E7D32) to AppStrings.statusCompleted
-        "cancelled"         -> Color(0xFF757575) to AppStrings.statusCancelled
-        else                -> Color(0xFFE65100) to AppStrings.statusPending
+        "awaiting_approval"                          -> Color(0xFF1A237E) to AppStrings.statusProviderFound
+        "accepted"                                   -> Color(0xFF1565C0) to AppStrings.statusProviderConfirmed
+        "on_the_way"                                 -> Color(0xFF1A237E) to AppStrings.onTheWayStatus
+        "arrived"                                    -> Color(0xFF2E7D32) to AppStrings.arrivedStatus
+        "working"                                    -> Color(0xFFE65100) to AppStrings.workingStatus
+        "finished", "completed"                      -> Color(0xFF2E7D32) to AppStrings.statusCompleted
+        "cancelled", "cancelled_by_client",
+        "cancelled_by_provider"                      -> Color(0xFF757575) to AppStrings.statusCancelled
+        else                                         -> Color(0xFFE65100) to AppStrings.statusPending
     }
 
     Card(
@@ -141,15 +145,15 @@ private fun RequestCard(req: ServiceRequest, onClick: () -> Unit) {
             Text(req.description, fontSize = 13.sp, color = Color(0xFF757575), maxLines = 2)
             Spacer(Modifier.height(4.dp))
             Text("📍 ${req.address}", fontSize = 12.sp, color = Color(0xFF9E9E9E))
-            if (req.status == "accepted" && req.providerName.isNotEmpty()) {
+            if (req.providerName.isNotEmpty() && req.status !in listOf("pending","awaiting_approval","cancelled","cancelled_by_client","cancelled_by_provider")) {
                 Spacer(Modifier.height(8.dp))
                 HorizontalDivider()
                 Spacer(Modifier.height(8.dp))
-                Text("মিস্ত্রি: ${req.providerName} • ${req.providerPhone}", fontSize = 12.sp, color = Color(0xFF1565C0), fontWeight = FontWeight.SemiBold)
+                Text("${AppStrings.providerLabel}: ${req.providerName} • ${req.providerPhone}", fontSize = 12.sp, color = Color(0xFF1565C0), fontWeight = FontWeight.SemiBold)
             }
-            if (req.status == "completed" && req.rating > 0) {
+            if ((req.status == "finished" || req.status == "completed") && req.rating > 0) {
                 Spacer(Modifier.height(6.dp))
-                Text("রেটিং: ${"⭐".repeat(req.rating)}", fontSize = 13.sp)
+                Text("${AppStrings.providerRatingLbl}: ${"⭐".repeat(req.rating)}", fontSize = 13.sp)
             }
         }
     }

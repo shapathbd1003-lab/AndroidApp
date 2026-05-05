@@ -157,46 +157,27 @@ object FakeRepository {
             .addSnapshotListener { snaps, _ ->
                 myJobs.clear()
                 snaps?.documents?.forEach { doc ->
+                    fun makeJob(fsStatus: String) = Job(
+                        id          = doc.id,
+                        description = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
+                        address     = doc.getString("address")     ?: "",
+                        phone       = doc.getString("clientPhone") ?: "",
+                        overview    = doc.getString("description") ?: "",
+                        problemType = doc.getString("problemType") ?: "normal",
+                        status      = fsStatus,
+                        lat         = doc.getDouble("lat") ?: 0.0,
+                        lng         = doc.getDouble("lng") ?: 0.0
+                    )
+
                     when (val status = doc.getString("status") ?: return@forEach) {
-                        "awaiting_approval" -> {
-                            myJobs[doc.id] = Job(
-                                id          = doc.id,
-                                description = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
-                                address     = doc.getString("address")     ?: "",
-                                phone       = doc.getString("clientPhone") ?: "",
-                                overview    = doc.getString("description") ?: "",
-                                problemType = doc.getString("problemType") ?: "normal",
-                                status      = "awaiting",   // waiting for client decision
-                                lat         = doc.getDouble("lat") ?: 0.0,
-                                lng         = doc.getDouble("lng") ?: 0.0
-                            )
-                        }
-                        "accepted" -> {
-                            myJobs[doc.id] = Job(
-                                id          = doc.id,
-                                description = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
-                                address     = doc.getString("address")     ?: "",
-                                phone       = doc.getString("clientPhone") ?: "",
-                                overview    = doc.getString("description") ?: "",
-                                problemType = doc.getString("problemType") ?: "normal",
-                                status      = "agreed",
-                                lat         = doc.getDouble("lat") ?: 0.0,
-                                lng         = doc.getDouble("lng") ?: 0.0
-                            )
-                        }
-                        "on_the_way" -> {
-                            myJobs[doc.id] = Job(
-                                id          = doc.id,
-                                description = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
-                                address     = doc.getString("address")     ?: "",
-                                phone       = doc.getString("clientPhone") ?: "",
-                                overview    = doc.getString("description") ?: "",
-                                problemType = doc.getString("problemType") ?: "normal",
-                                status      = "on_the_way",
-                                lat         = doc.getDouble("lat") ?: 0.0,
-                                lng         = doc.getDouble("lng") ?: 0.0
-                            )
-                        }
+                        // Waiting for client confirmation
+                        "awaiting_approval" -> myJobs[doc.id] = makeJob("awaiting")
+                        // Client confirmed — go to location
+                        "accepted"          -> myJobs[doc.id] = makeJob("agreed")
+                        // Status chain: on_the_way → arrived → working
+                        "on_the_way"        -> myJobs[doc.id] = makeJob("on_the_way")
+                        "arrived"           -> myJobs[doc.id] = makeJob("arrived")
+                        "working"           -> myJobs[doc.id] = makeJob("working")
                         "completed" -> {
                             // Client marked done — add to provider history if not already there
                             val prov = provider
@@ -217,7 +198,32 @@ object FakeRepository {
                                     }
                                 }
                             }
-                            // Completed jobs don't appear in active job list
+                            // finished = completed; add to history
+                        }
+                        // finished is stored as "finished" in Firestore
+                        "finished" -> {
+                            val prov = provider
+                            if (prov != null && prov.history.none { it.id == doc.id }) {
+                                val desc = AppStrings.serviceTypeName(doc.getString("serviceType") ?: "")
+                                val fee  = doc.getDouble("agreedPrice")?.takeIf { it > 0 } ?: prov.baseFee
+                                prov.advance += fee
+                                prov.history.add(ServiceHistory(doc.id, desc, fee))
+                                val uid2 = auth.currentUser?.uid
+                                if (uid2 != null) {
+                                    CoroutineScope(Dispatchers.IO).launch {
+                                        runCatching {
+                                            db.collection("providers").document(uid2).update(
+                                                mapOf("advance" to prov.advance)
+                                            ).await()
+                                        }
+                                    }
+                                }
+                            }
+                            // Finished jobs removed from active list
+                        }
+                        // Cancelled variants — remove from list
+                        "cancelled", "cancelled_by_client", "cancelled_by_provider" -> {
+                            myJobs.remove(doc.id)
                         }
                     }
                 }
@@ -228,7 +234,7 @@ object FakeRepository {
     private fun rebuildJobList() {
         val sorted = (pendingJobs.values + myJobs.values)
             .sortedWith(compareBy(
-                { when (it.status) { "agreed" -> 0; "awaiting" -> 1; else -> 2 } },
+                { when (it.status) { "agreed" -> 0; "arrived" -> 1; "working" -> 1; "on_the_way" -> 2; "awaiting" -> 3; else -> 4 } },
                 { if (it.distanceKm >= 0) it.distanceKm else Double.MAX_VALUE }
             ))
         jobs.clear()
@@ -289,15 +295,38 @@ object FakeRepository {
         return true
     }
 
-    // ── On the way ────────────────────────────────────────────────────────────
-    fun markOnTheWay(jobId: String) {
+    // ── Status transitions ────────────────────────────────────────────────────
+    private fun updateJobStatus(jobId: String, localStatus: String, fsStatus: String, timeField: String) {
         val idx = jobs.indexOfFirst { it.id == jobId }
-        if (idx >= 0) jobs[idx] = jobs[idx].copy(status = "on_the_way")
+        if (idx >= 0) jobs[idx] = jobs[idx].copy(status = localStatus)
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
                 db.collection("requests").document(jobId).update(mapOf(
-                    "status"       to "on_the_way",
-                    "onTheWayAt"   to FieldValue.serverTimestamp()
+                    "status"    to fsStatus,
+                    timeField   to FieldValue.serverTimestamp()
+                )).await()
+            }
+        }
+    }
+
+    fun markOnTheWay(jobId: String) = updateJobStatus(jobId, "on_the_way", "on_the_way", "onTheWayAt")
+    fun markArrived(jobId: String)  = updateJobStatus(jobId, "arrived",    "arrived",    "arrivedAt")
+    fun markWorking(jobId: String)  = updateJobStatus(jobId, "working",    "working",    "workingAt")
+    fun markFinished(jobId: String) {
+        val idx = jobs.indexOfFirst { it.id == jobId }
+        if (idx >= 0) {
+            val job  = jobs[idx]
+            val prov = provider
+            if (prov != null && prov.history.none { it.id == jobId }) {
+                prov.advance += prov.baseFee
+                prov.history.add(ServiceHistory(jobId, job.description, prov.baseFee))
+            }
+        }
+        CoroutineScope(Dispatchers.IO).launch {
+            runCatching {
+                db.collection("requests").document(jobId).update(mapOf(
+                    "status"      to "finished",
+                    "finishedAt"  to FieldValue.serverTimestamp()
                 )).await()
             }
         }

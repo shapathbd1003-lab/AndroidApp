@@ -101,7 +101,10 @@ fun JobListScreen(vm: MainViewModel, nav: NavController) {
                         job            = job,
                         onAccept       = { vm.accept(job) },
                         onClick        = { nav.navigate(Screen.JobDetail.createRoute(job.id)) },
-                        onMarkOnTheWay = if (job.status == "agreed") ({ vm.markOnTheWay(job.id) }) else null,
+                        onMarkOnTheWay = if (job.status == "agreed")    ({ vm.markOnTheWay(job.id) })  else null,
+                        onMarkArrived  = if (job.status == "on_the_way")({ vm.markArrived(job.id) })   else null,
+                        onMarkWorking  = if (job.status == "arrived")   ({ vm.markWorking(job.id) })   else null,
+                        onMarkFinished = if (job.status == "working")   ({ vm.markFinished(job.id) })  else null,
                         hasPoints      = vm.hasEnoughPoints
                     )
                 }

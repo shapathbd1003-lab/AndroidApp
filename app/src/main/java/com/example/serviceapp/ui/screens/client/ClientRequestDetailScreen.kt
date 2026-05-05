@@ -107,15 +107,9 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                         Text(AppStrings.agreeBtn, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
                 }
-                "accepted" -> Button(
-                    onClick = { vm.completeAndRate(request.id, 0) { } },
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
-                ) {
-                    Text(AppStrings.markDoneBtn, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                }
-                "completed" -> if (request.rating == 0) Button(
+                // In-progress statuses — show info only, no action for client
+                "on_the_way", "arrived", "working" -> { /* Provider is handling it */ }
+                "finished", "completed" -> if (request.rating == 0) Button(
                     onClick = {
                         if (selectedRating > 0) {
                             vm.completeAndRate(request.id, selectedRating, reviewText) { nav.popBackStack() }
@@ -136,12 +130,15 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
 @Composable
 private fun StatusCard(req: ServiceRequest) {
     val (bg, fg, emoji, label) = when (req.status) {
-        "awaiting_approval" -> listOf(Color(0xFFE8EAF6), Color(0xFF1A237E), "🔍", AppStrings.decisionNeeded)
-        "accepted"          -> listOf(Color(0xFFE3F2FD), Color(0xFF1565C0), "🔧", AppStrings.providerStarting)
-        "on_the_way"        -> listOf(Color(0xFFE8EAF6), Color(0xFF1A237E), "🛵", AppStrings.providerOnTheWay)
-        "completed"         -> listOf(Color(0xFFE8F5E9), Color(0xFF2E7D32), "☑️", AppStrings.jobDone)
-        "cancelled"         -> listOf(Color(0xFFFFEBEE), Color(0xFFC62828), "❌", AppStrings.requestCancelledMsg)
-        else                -> listOf(Color(0xFFFFF8E1), Color(0xFFE65100), "⏳", AppStrings.waitingForProvider)
+        "awaiting_approval"    -> listOf(Color(0xFFE8EAF6), Color(0xFF1A237E), "🔍", AppStrings.decisionNeeded)
+        "accepted"             -> listOf(Color(0xFFE3F2FD), Color(0xFF1565C0), "🔧", AppStrings.providerStarting)
+        "on_the_way"           -> listOf(Color(0xFFE8EAF6), Color(0xFF1A237E), "🛵", AppStrings.providerOnTheWay)
+        "arrived"              -> listOf(Color(0xFFE8F5E9), Color(0xFF2E7D32), "🏠", AppStrings.providerArrived)
+        "working"              -> listOf(Color(0xFFFFF3E0), Color(0xFFE65100), "🔧", AppStrings.workInProgress)
+        "finished", "completed"-> listOf(Color(0xFFE8F5E9), Color(0xFF2E7D32), "☑️", AppStrings.jobFinished)
+        "cancelled", "cancelled_by_client", "cancelled_by_provider"
+                               -> listOf(Color(0xFFFFEBEE), Color(0xFFC62828), "❌", AppStrings.requestCancelledMsg)
+        else                   -> listOf(Color(0xFFFFF8E1), Color(0xFFE65100), "⏳", AppStrings.waitingForProvider)
     }
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = bg as Color)) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {

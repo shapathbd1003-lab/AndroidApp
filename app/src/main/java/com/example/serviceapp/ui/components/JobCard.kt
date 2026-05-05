@@ -38,17 +38,22 @@ import com.example.serviceapp.utils.AppStrings
 
 @Composable
 fun JobCard(
-    job:           Job,
-    onAccept:      () -> Unit,
-    onClick:       () -> Unit,
+    job:            Job,
+    onAccept:       () -> Unit,
+    onClick:        () -> Unit,
     onMarkOnTheWay: (() -> Unit)? = null,
-    hasPoints:     Boolean = true
+    onMarkArrived:  (() -> Unit)? = null,
+    onMarkWorking:  (() -> Unit)? = null,
+    onMarkFinished: (() -> Unit)? = null,
+    hasPoints:      Boolean = true
 ) {
 
     val isDone      = job.status == "done"
     val isAwaiting  = job.status == "awaiting"
     val isAgreed    = job.status == "agreed"
     val isOnTheWay  = job.status == "on_the_way"
+    val isArrived   = job.status == "arrived"
+    val isWorking   = job.status == "working"
 
     Card(
         modifier = Modifier
@@ -89,10 +94,12 @@ fun JobCard(
                     }
                     // Status badge
                     val (statusBg, statusFg, statusLabel) = when (job.status) {
-                        "done"       -> Triple(Color(0xFFE8F5E9), AppColors.Success,    AppStrings.accepted)
-                        "awaiting"   -> Triple(Color(0xFFFFF8E1), Color(0xFFE65100),    AppStrings.awaitingClientApproval)
-                        "agreed"     -> Triple(Color(0xFFE3F2FD), Color(0xFF1565C0),    AppStrings.clientAgreed)
-                        "on_the_way" -> Triple(Color(0xFFE8EAF6), AppColors.Primary,    AppStrings.onTheWayStatus)
+                        "done"       -> Triple(Color(0xFFE8F5E9), AppColors.Success,     AppStrings.finishedStatus)
+                        "awaiting"   -> Triple(Color(0xFFFFF8E1), Color(0xFFE65100),     AppStrings.awaitingClientApproval)
+                        "agreed"     -> Triple(Color(0xFFE3F2FD), Color(0xFF1565C0),     AppStrings.clientAgreed)
+                        "on_the_way" -> Triple(Color(0xFFE8EAF6), AppColors.Primary,     AppStrings.onTheWayStatus)
+                        "arrived"    -> Triple(Color(0xFFE8F5E9), Color(0xFF2E7D32),     AppStrings.arrivedStatus)
+                        "working"    -> Triple(Color(0xFFFFF3E0), Color(0xFFE65100),     AppStrings.workingStatus)
                         else         -> Triple(AppColors.PrimaryContainer, AppColors.Primary, AppStrings.pending)
                     }
                     Surface(shape = RoundedCornerShape(20.dp), color = statusBg) {
@@ -177,18 +184,24 @@ fun JobCard(
                         }
                     }
                 } else if (isAgreed && onMarkOnTheWay != null) {
-                    // Client agreed — provider can now go
-                    Button(
-                        onClick = { onMarkOnTheWay() },
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
-                    ) {
+                    Button(onClick = { onMarkOnTheWay() }, shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)) {
                         Text(AppStrings.markOnTheWay, fontSize = 13.sp)
                     }
-                } else if (isOnTheWay) {
-                    Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFE8EAF6)) {
-                        Text(AppStrings.onTheWayStatus, fontSize = 12.sp, color = AppColors.Primary,
-                            fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+                } else if (isOnTheWay && onMarkArrived != null) {
+                    Button(onClick = { onMarkArrived() }, shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))) {
+                        Text(AppStrings.markArrived, fontSize = 13.sp)
+                    }
+                } else if (isArrived && onMarkWorking != null) {
+                    Button(onClick = { onMarkWorking() }, shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100))) {
+                        Text(AppStrings.markWorking, fontSize = 13.sp)
+                    }
+                } else if (isWorking && onMarkFinished != null) {
+                    Button(onClick = { onMarkFinished() }, shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))) {
+                        Text(AppStrings.markFinished, fontSize = 13.sp)
                     }
                 } else if (isDone) {
                     Surface(
