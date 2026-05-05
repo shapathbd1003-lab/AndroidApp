@@ -172,6 +172,42 @@ object AppStrings {
     val rateAndReview      get() = if (isBn) "রেটিং ও রিভিউ দিন" else "Rate & Review"
     val yourReview         get() = if (isBn) "আপনার রিভিউ" else "Your Review"
     val reviewHint         get() = if (isBn) "আপনার অভিজ্ঞতা লিখুন (ঐচ্ছিক)" else "Write your experience (optional)"
+
+    // ── Request status labels (dashboard & detail) ───────────────────────────
+    val statusProviderFound    get() = if (isBn) "🔍 মিস্ত্রি পাওয়া গেছে!" else "🔍 Provider Found!"
+    val statusProviderConfirmed get() = if (isBn) "✅ মিস্ত্রি নিশ্চিত" else "✅ Provider Confirmed"
+    val statusCompleted        get() = if (isBn) "☑️ সম্পন্ন" else "☑️ Completed"
+    val statusCancelled        get() = if (isBn) "❌ বাতিল" else "❌ Cancelled"
+    val statusPending          get() = if (isBn) "⏳ অপেক্ষমান..." else "⏳ Pending..."
+    val statusDecide           get() = if (isBn) "🔍 সিদ্ধান্ত নিন" else "🔍 Decide"
+    val statusConfirmed        get() = if (isBn) "✅ নিশ্চিত" else "✅ Confirmed"
+    val statusNotMatched       get() = if (isBn) "😔 মিলেনি" else "😔 Not matched"
+
+    // ── Request detail labels ────────────────────────────────────────────────
+    val requestNotFound        get() = if (isBn) "অনুরোধ পাওয়া যায়নি" else "Request not found"
+    val decisionNeeded         get() = if (isBn) "মিস্ত্রি পাওয়া গেছে — আপনার সিদ্ধান্ত নিন" else "Provider found — make your decision"
+    val providerStarting       get() = if (isBn) "মিস্ত্রি নিশ্চিত — কাজ শুরু হচ্ছে!" else "Provider confirmed — starting work!"
+    val jobDone                get() = if (isBn) "কাজ সম্পন্ন!" else "Job complete!"
+    val requestCancelledMsg    get() = if (isBn) "অনুরোধ বাতিল হয়েছে" else "Request cancelled"
+    val hireQuestion           get() = if (isBn) "এই মিস্ত্রিকে নিয়োগ দিতে চান? নিচে সম্মতি দিন।" else "Want to hire this provider? Confirm below."
+    val completedJobsLabel     get() = if (isBn) "✅ সম্পন্ন কাজ" else "✅ Completed Jobs"
+    val providerLabel          get() = if (isBn) "মিস্ত্রি" else "Provider"
+    val ratingMin              get() = if (isBn) "রেটিং ≥" else "Rating ≥"
+    val feeMax                 get() = if (isBn) "ফি ≤ ৳" else "Fee ≤ ৳"
+
+    // ── Star rating labels ───────────────────────────────────────────────────
+    fun starLabel(stars: Int) = when (stars) {
+        1    -> if (isBn) "খুব খারাপ 😞"  else "Very bad 😞"
+        2    -> if (isBn) "খারাপ 😕"       else "Bad 😕"
+        3    -> if (isBn) "ঠিকঠাক 😐"      else "Okay 😐"
+        4    -> if (isBn) "ভালো 😊"        else "Good 😊"
+        else -> if (isBn) "চমৎকার! 🤩"    else "Excellent! 🤩"
+    }
+
+    // ── Job list ─────────────────────────────────────────────────────────────
+    val nearestSorted get() = if (isBn) "টি কাজ — নিকটতম থেকে সাজানো" else "jobs — sorted by nearest"
+
+    // ── Client screens ────────────────────────────────────────────────────────
     val totalRequests      get() = if (isBn) "মোট অনুরোধ" else "Total Requests"
     val avgRating          get() = if (isBn) "গড় রেটিং" else "Avg Rating"
     val clientHistory      get() = if (isBn) "সেবার ইতিহাস" else "Service History"
@@ -222,12 +258,28 @@ object AppStrings {
 
     // ── Problem type strings ──────────────────────────────────────────────────
     val waitingForProvider    get() = if (isBn) "মিস্ত্রির জন্য অপেক্ষা করছেন..." else "Waiting for a provider..."
-    val awaitingClientApproval get() = if (isBn) "গ্রাহকের সিদ্ধান্তের অপেক্ষায়..." else "Waiting for client approval..."
-    val clientAgreed           get() = if (isBn) "✅ গ্রাহক রাজি — কাজ শুরু করুন!" else "✅ Client agreed — start work!"
-    val onTheWayStatus         get() = if (isBn) "🛵 রওনা দিয়েছি" else "🛵 On the Way"
-    val providerOnTheWay       get() = if (isBn) "🛵 মিস্ত্রি আসছেন!" else "🛵 Provider is on the way!"
+    // ── Full job status flow strings ─────────────────────────────────────────
+    // Provider side
+    val statusWaiting          get() = if (isBn) "🔔 নতুন কাজ পাওয়া গেছে" else "🔔 New job available"
+    val awaitingClientApproval get() = if (isBn) "⏳ গ্রাহকের নিশ্চিতকরণের অপেক্ষায়" else "⏳ Waiting for client confirmation"
+    val clientAgreed           get() = if (isBn) "✅ গ্রাহক রাজি — রওনা দিন" else "✅ Client confirmed — go to location"
+    val onTheWayStatus         get() = if (isBn) "🛵 যাত্রা শুরু হয়েছে" else "🛵 On the Way"
+    val arrivedStatus          get() = if (isBn) "🏠 পৌঁছে গেছি" else "🏠 Arrived"
+    val workingStatus          get() = if (isBn) "🔧 কাজ চলছে" else "🔧 Working"
+    val finishedStatus         get() = if (isBn) "☑️ কাজ সম্পন্ন" else "☑️ Job Finished"
     val markOnTheWay           get() = if (isBn) "🛵 রওনা দিচ্ছি" else "🛵 I'm on the way"
-    val arrived                get() = if (isBn) "🏠 পৌঁছে গেছি" else "🏠 Arrived"
+    val markArrived            get() = if (isBn) "🏠 পৌঁছে গেছি" else "🏠 I've arrived"
+    val markWorking            get() = if (isBn) "🔧 কাজ শুরু করছি" else "🔧 Starting work"
+    val markFinished           get() = if (isBn) "✅ কাজ সম্পন্ন করলাম" else "✅ Job finished"
+    // Client side
+    val providerOnTheWay       get() = if (isBn) "🛵 মিস্ত্রি আসছেন!" else "🛵 Provider is on the way!"
+    val providerArrived        get() = if (isBn) "🏠 মিস্ত্রি পৌঁছে গেছেন!" else "🏠 Provider has arrived!"
+    val workInProgress         get() = if (isBn) "🔧 কাজ চলছে..." else "🔧 Work in progress..."
+    val jobFinished            get() = if (isBn) "☑️ কাজ সম্পন্ন হয়েছে!" else "☑️ Job has been completed!"
+    // Cancelled
+    val cancelledByClient      get() = if (isBn) "❌ গ্রাহক বাতিল করেছেন" else "❌ Cancelled by client"
+    val cancelledByProvider    get() = if (isBn) "❌ মিস্ত্রি বাতিল করেছেন" else "❌ Cancelled by provider"
+    val cancelReasonHint       get() = if (isBn) "বাতিলের কারণ লিখুন (ঐচ্ছিক)" else "Reason for cancellation (optional)"
     // Points
     val pointsLabel            get() = if (isBn) "পয়েন্ট" else "Points"
     val insufficientPoints     get() = if (isBn) "পর্যাপ্ত পয়েন্ট নেই" else "Insufficient points"
