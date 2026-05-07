@@ -330,7 +330,7 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                             modifier = Modifier.clickable { showDeleteConfirm = true }
                         ) {
                             Text(
-                                "🗑 মুছুন",
+                                AppStrings.deleteHistoryBtn,
                                 fontSize = 11.sp,
                                 color = AppColors.Error,
                                 fontWeight = FontWeight.SemiBold,
@@ -381,14 +381,14 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
             // ── Reviews ───────────────────────────────────────────────────────
             Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("গ্রাহক রিভিউ", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
-                Text("${reviews.size} রিভিউ", fontSize = 12.sp, color = AppColors.TextSecondary)
+                Text(AppStrings.reviewsTitle, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
+                Text("${reviews.size} ${AppStrings.reviewUnit}", fontSize = 12.sp, color = AppColors.TextSecondary)
             }
             Spacer(Modifier.height(8.dp))
             if (reviews.isEmpty()) {
                 Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = AppColors.Surface), elevation = CardDefaults.cardElevation(1.dp)) {
                     Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
-                        Text("এখনো কোনো রিভিউ নেই", fontSize = 13.sp, color = AppColors.TextSecondary)
+                        Text(AppStrings.noReviewsYet, fontSize = 13.sp, color = AppColors.TextSecondary)
                     }
                 }
             } else {
@@ -419,16 +419,16 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title   = { Text("ইতিহাস মুছে ফেলুন?") },
-            text    = { Text("সব সেবার ইতিহাস এবং আয়ের রেকর্ড মুছে যাবে। এটি পূর্বাবস্থায় ফেরানো যাবে না।") },
+            title   = { Text(AppStrings.deleteHistoryTitle) },
+            text    = { Text(AppStrings.providerDeleteHistoryMsg) },
             confirmButton = {
                 Button(
                     onClick = { vm.clearHistory(); showDeleteConfirm = false },
                     colors  = ButtonDefaults.buttonColors(containerColor = AppColors.Error)
-                ) { Text("হ্যাঁ, মুছুন") }
+                ) { Text(AppStrings.yesDelete) }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showDeleteConfirm = false }) { Text("বাতিল") }
+                OutlinedButton(onClick = { showDeleteConfirm = false }) { Text(AppStrings.cancelBtn) }
             }
         )
     }

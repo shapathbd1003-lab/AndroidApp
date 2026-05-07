@@ -103,7 +103,7 @@ fun ClientProfileScreen(vm: ClientViewModel, nav: NavController) {
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     StatCard(Modifier.weight(1f), "${vm.requests.size}", AppStrings.totalRequests, Color(0xFF1A237E), Color(0xFFE8EAF6))
-                    StatCard(Modifier.weight(1f), "${history.count { it.status == "completed" }}", AppStrings.statusCompleted, Color(0xFF2E7D32), Color(0xFFE8F5E9))
+                    StatCard(Modifier.weight(1f), "${history.count { it.status == "finished" || it.status == "completed" }}", AppStrings.statusCompleted, Color(0xFF2E7D32), Color(0xFFE8F5E9))
                     StatCard(Modifier.weight(1f), if (avgRating > 0) "%.1f ⭐".format(avgRating) else "—", AppStrings.avgRating, Color(0xFFE65100), Color(0xFFFFF3E0))
                 }
             }
@@ -240,8 +240,8 @@ private fun HistoryCard(req: ServiceRequest, nav: NavController) {
                 Text(AppStrings.serviceTypeName(req.serviceType), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF212121))
                 Text(label, fontSize = 12.sp, color = Color(0xFF424242))
             }
-            if (req.providerName.isNotBlank()) Text("মিস্ত্রি: ${req.providerName}", fontSize = 12.sp, color = Color(0xFF757575))
-            if (req.rating > 0) Text("রেটিং: ${"⭐".repeat(req.rating)}", fontSize = 13.sp)
+            if (req.providerName.isNotBlank()) Text("${AppStrings.providerLabel}: ${req.providerName}", fontSize = 12.sp, color = Color(0xFF757575))
+            if (req.rating > 0) Text("${AppStrings.ratingLabel}: ${"⭐".repeat(req.rating)}", fontSize = 13.sp)
             if (req.reviewComment.isNotBlank()) Text("\"${req.reviewComment}\"", fontSize = 12.sp, color = Color(0xFF424242))
         }
     }

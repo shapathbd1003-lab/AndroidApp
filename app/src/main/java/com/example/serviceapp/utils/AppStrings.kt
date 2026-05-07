@@ -299,4 +299,11 @@ object AppStrings {
         "critical" -> criticalProblem
         else       -> normalProblem
     }
+
+    // ── Provider profile / reviews ───────────────────────────────────────────
+    val reviewsTitle             get() = if (isBn) "গ্রাহক রিভিউ" else "Customer Reviews"
+    val reviewUnit               get() = if (isBn) "রিভিউ" else "reviews"
+    val noReviewsYet             get() = if (isBn) "এখনো কোনো রিভিউ নেই" else "No reviews yet"
+    val providerDeleteHistoryMsg get() = if (isBn) "সব সেবার ইতিহাস এবং আয়ের রেকর্ড মুছে যাবে। এটি পূর্বাবস্থায় ফেরানো যাবে না।" else "All job history and earnings will be deleted. This cannot be undone."
+    val ratingLabel              get() = if (isBn) "রেটিং" else "Rating"
 }

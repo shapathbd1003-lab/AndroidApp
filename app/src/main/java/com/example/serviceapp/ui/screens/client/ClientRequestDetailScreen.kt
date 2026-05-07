@@ -75,7 +75,7 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
             else if (request.status in listOf("accepted", "on_the_way", "arrived", "working", "finished", "completed")) ProviderInfoCard(request)
             if ((request.status == "finished" || request.status == "completed") && request.rating == 0)
                 RatingCard(providerRating, serviceRating, reviewText, { providerRating = it }, { serviceRating = it }, { reviewText = it })
-            if (request.status == "completed" && request.rating > 0) CompletedReviewCard(request)
+            if ((request.status == "finished" || request.status == "completed") && request.rating > 0) CompletedReviewCard(request)
         }
 
         // Action bar
