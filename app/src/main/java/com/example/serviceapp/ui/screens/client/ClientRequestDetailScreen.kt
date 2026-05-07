@@ -72,7 +72,7 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
             InfoCard(request)
             if (request.minRating > 0 || request.maxPrice > 0) FilterSummaryCard(request)
             if (request.status == "awaiting_approval") ProviderApprovalCard(request)
-            else if (request.status == "accepted" || request.status == "completed") ProviderInfoCard(request)
+            else if (request.status in listOf("accepted", "on_the_way", "arrived", "working", "finished", "completed")) ProviderInfoCard(request)
             if ((request.status == "finished" || request.status == "completed") && request.rating == 0)
                 RatingCard(providerRating, serviceRating, reviewText, { providerRating = it }, { serviceRating = it }, { reviewText = it })
             if (request.status == "completed" && request.rating > 0) CompletedReviewCard(request)

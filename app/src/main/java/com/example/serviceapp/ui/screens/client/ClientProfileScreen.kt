@@ -31,8 +31,8 @@ fun ClientProfileScreen(vm: ClientViewModel, nav: NavController) {
     val client             = vm.client
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
-    val history = vm.requests.filter { it.status in listOf("completed", "cancelled", "no_provider") }
-    val active  = vm.requests.filter { it.status in listOf("pending", "awaiting_approval", "accepted") }
+    val active  = vm.requests.filter { it.status in listOf("pending", "awaiting_approval", "accepted", "on_the_way", "arrived", "working") }
+    val history = vm.requests.filter { it.status in listOf("finished", "completed", "cancelled", "cancelled_by_client", "cancelled_by_provider", "no_provider") }
     val avgRating = history.filter { it.rating > 0 }.map { it.rating }.average().let {
         if (it.isNaN()) 0.0 else it
     }
@@ -210,6 +210,9 @@ private fun MiniRequestCard(req: ServiceRequest, purple: Color, onClick: () -> U
             val (color, label) = when (req.status) {
                 "awaiting_approval" -> Color(0xFF1A237E) to AppStrings.statusDecide
                 "accepted"          -> Color(0xFF1565C0) to AppStrings.statusConfirmed
+                "on_the_way"        -> Color(0xFF1A237E) to AppStrings.onTheWayStatus
+                "arrived"           -> Color(0xFF2E7D32) to AppStrings.arrivedStatus
+                "working"           -> Color(0xFFE65100) to AppStrings.workingStatus
                 else                -> Color(0xFFE65100) to AppStrings.pending
             }
             Surface(shape = RoundedCornerShape(20.dp), color = color.copy(alpha = 0.1f)) {
@@ -222,9 +225,9 @@ private fun MiniRequestCard(req: ServiceRequest, purple: Color, onClick: () -> U
 @Composable
 private fun HistoryCard(req: ServiceRequest, nav: NavController) {
     val (bg, label) = when (req.status) {
-        "completed"   -> Color(0xFFE8F5E9) to AppStrings.statusCompleted
-        "cancelled"   -> Color(0xFFFFEBEE) to AppStrings.statusCancelled
-        else          -> Color(0xFFFFF3E0) to AppStrings.statusNotMatched
+        "finished", "completed"                                   -> Color(0xFFE8F5E9) to AppStrings.statusCompleted
+        "cancelled", "cancelled_by_client", "cancelled_by_provider" -> Color(0xFFFFEBEE) to AppStrings.statusCancelled
+        else                                                       -> Color(0xFFFFF3E0) to AppStrings.statusNotMatched
     }
     Card(
         modifier  = Modifier.fillMaxWidth().clickable { nav.navigate(Screen.ClientRequestDetail.createRoute(req.id)) },

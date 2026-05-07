@@ -242,11 +242,16 @@ object FakeRepository {
     }
 
     private fun rebuildJobList() {
-        val sorted = (pendingJobs.values + myJobs.values)
-            .sortedWith(compareBy(
-                { when (it.status) { "agreed" -> 0; "arrived" -> 1; "working" -> 1; "on_the_way" -> 2; "awaiting" -> 3; else -> 4 } },
-                { if (it.distanceKm >= 0) it.distanceKm else Double.MAX_VALUE }
-            ))
+        // myJobs always wins over pendingJobs for the same ID — prevents a duplicate
+        // "pending" card appearing when the pendingListener fires before the Firestore
+        // status update propagates after accept().
+        val merged = mutableMapOf<String, Job>()
+        myJobs.forEach   { (id, job) -> merged[id] = job }
+        pendingJobs.forEach { (id, job) -> if (id !in merged) merged[id] = job }
+        val sorted = merged.values.sortedWith(compareBy(
+            { when (it.status) { "agreed" -> 0; "arrived" -> 1; "working" -> 1; "on_the_way" -> 2; "awaiting" -> 3; else -> 4 } },
+            { if (it.distanceKm >= 0) it.distanceKm else Double.MAX_VALUE }
+        ))
         jobs.clear()
         jobs.addAll(sorted)
     }

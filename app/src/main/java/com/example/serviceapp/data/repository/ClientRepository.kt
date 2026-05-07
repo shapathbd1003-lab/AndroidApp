@@ -227,7 +227,7 @@ object ClientRepository {
         val uid = client?.id ?: error("Not logged in")
         val snaps = db.collection("requests")
             .whereEqualTo("clientId", uid)
-            .whereIn("status", listOf("completed", "cancelled", "no_provider"))
+            .whereIn("status", listOf("finished", "completed", "cancelled", "cancelled_by_client", "cancelled_by_provider", "no_provider"))
             .get().await()
         val batch = db.batch()
         snaps.documents.forEach { batch.update(it.reference, "clientDeleted", true) }
