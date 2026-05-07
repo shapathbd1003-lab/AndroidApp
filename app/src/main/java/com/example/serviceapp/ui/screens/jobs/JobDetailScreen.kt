@@ -93,7 +93,7 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                         "on_the_way" -> Color(0xFFE8EAF6) to AppStrings.onTheWayStatus
                         "arrived"    -> Color(0xFFE8F5E9) to AppStrings.arrivedStatus
                         "working"    -> Color(0xFFFFF3E0) to AppStrings.workingStatus
-                        "done"       -> Color(0xFFE8F5E9) to AppStrings.finishedStatus
+                        "finished"   -> Color(0xFFE8F5E9) to AppStrings.finishedStatus
                         else         -> Color(0xFFE8EAF6) to AppStrings.pending
                     }
                     Surface(shape = RoundedCornerShape(20.dp), color = statusColor.copy(alpha = 0.9f)) {
@@ -154,7 +154,7 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
             }
 
             // Completed card
-            if (job.status == "done") {
+            if (job.status == "finished") {
                 Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))) {
                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically,
