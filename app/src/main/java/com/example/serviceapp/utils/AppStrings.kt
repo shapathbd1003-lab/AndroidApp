@@ -306,4 +306,12 @@ object AppStrings {
     val noReviewsYet             get() = if (isBn) "এখনো কোনো রিভিউ নেই" else "No reviews yet"
     val providerDeleteHistoryMsg get() = if (isBn) "সব সেবার ইতিহাস এবং আয়ের রেকর্ড মুছে যাবে। এটি পূর্বাবস্থায় ফেরানো যাবে না।" else "All job history and earnings will be deleted. This cannot be undone."
     val ratingLabel              get() = if (isBn) "রেটিং" else "Rating"
+    val clientLabel              get() = if (isBn) "গ্রাহক" else "Client"
+
+    // ── Rating card labels ───────────────────────────────────────────────────
+    val providerBehaviorLabel get() = if (isBn) "মিস্ত্রির আচরণ ও ব্যবহার" else "Provider behavior"
+    val serviceQualityLabel   get() = if (isBn) "কাজের মান ও গুণমান"       else "Service quality"
+
+    // ── No-provider status ───────────────────────────────────────────────────
+    val noProviderFound get() = if (isBn) "😔 কোনো মিস্ত্রি পাওয়া যায়নি" else "😔 No provider available"
 }

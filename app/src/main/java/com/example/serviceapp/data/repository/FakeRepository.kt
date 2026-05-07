@@ -188,48 +188,27 @@ object FakeRepository {
                         "on_the_way"        -> myJobs[doc.id] = makeJob("on_the_way")
                         "arrived"           -> myJobs[doc.id] = makeJob("arrived")
                         "working"           -> myJobs[doc.id] = makeJob("working")
-                        "completed" -> {
-                            // Client marked done — add to provider history if not already there
+                        // "completed" status is never set by this app (kept for safety)
+                        "completed", "finished" -> {
                             val prov = provider
                             if (prov != null && prov.history.none { it.id == doc.id }) {
-                                val desc = AppStrings.serviceTypeName(doc.getString("serviceType") ?: "")
-                                prov.advance += prov.baseFee
-                                prov.history.add(ServiceHistory(doc.id, desc, prov.baseFee))
-
-                                // Persist updated advance to Firestore
-                                val uid = auth.currentUser?.uid
-                                if (uid != null) {
-                                    CoroutineScope(Dispatchers.IO).launch {
-                                        runCatching {
-                                            db.collection("providers").document(uid).update(
-                                                mapOf("advance" to prov.advance)
-                                            ).await()
-                                        }
-                                    }
-                                }
-                            }
-                            // finished = completed; add to history
-                        }
-                        // finished is stored as "finished" in Firestore
-                        "finished" -> {
-                            val prov = provider
-                            if (prov != null && prov.history.none { it.id == doc.id }) {
-                                val desc = AppStrings.serviceTypeName(doc.getString("serviceType") ?: "")
-                                val fee  = doc.getDouble("agreedPrice")?.takeIf { it > 0 } ?: prov.baseFee
+                                val desc         = AppStrings.serviceTypeName(doc.getString("serviceType") ?: "")
+                                val fee          = doc.getDouble("agreedPrice")?.takeIf { it > 0 } ?: prov.baseFee
+                                val clientName   = doc.getString("clientName")      ?: ""
+                                val clientRating = (doc.getLong("rating") ?: 0).toInt()
                                 prov.advance += fee
-                                prov.history.add(ServiceHistory(doc.id, desc, fee))
+                                prov.history.add(ServiceHistory(doc.id, desc, fee, clientName, clientRating))
                                 val uid2 = auth.currentUser?.uid
                                 if (uid2 != null) {
                                     CoroutineScope(Dispatchers.IO).launch {
                                         runCatching {
-                                            db.collection("providers").document(uid2).update(
-                                                mapOf("advance" to prov.advance)
-                                            ).await()
+                                            db.collection("providers").document(uid2)
+                                                .update(mapOf("advance" to prov.advance)).await()
                                         }
                                     }
                                 }
                             }
-                            // Finished jobs removed from active list
+                            // Finished jobs do not appear in the active list
                         }
                         // Cancelled variants — remove from list
                         "cancelled", "cancelled_by_client", "cancelled_by_provider" -> {
@@ -329,20 +308,14 @@ object FakeRepository {
     fun markArrived(jobId: String)  = updateJobStatus(jobId, "arrived",    "arrived",    "arrivedAt")
     fun markWorking(jobId: String)  = updateJobStatus(jobId, "working",    "working",    "workingAt")
     fun markFinished(jobId: String) {
-        val idx = jobs.indexOfFirst { it.id == jobId }
-        if (idx >= 0) {
-            val job  = jobs[idx]
-            val prov = provider
-            if (prov != null && prov.history.none { it.id == jobId }) {
-                prov.advance += prov.baseFee
-                prov.history.add(ServiceHistory(jobId, job.description, prov.baseFee))
-            }
-        }
+        myJobs.remove(jobId)
+        pendingJobs.remove(jobId)
+        rebuildJobList()
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
                 db.collection("requests").document(jobId).update(mapOf(
-                    "status"      to "finished",
-                    "finishedAt"  to FieldValue.serverTimestamp()
+                    "status"     to "finished",
+                    "finishedAt" to FieldValue.serverTimestamp()
                 )).await()
             }
         }

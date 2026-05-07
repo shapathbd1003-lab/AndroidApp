@@ -207,10 +207,22 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100))) {
                     Text(AppStrings.markWorking, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 }
-                "working" -> Button(onClick = { vm.markFinished(job.id); nav.popBackStack() },
+                "working" -> Button(
+                    onClick = { vm.markFinished(job.id); nav.popBackStack() },
                     modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))) {
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                ) {
                     Text(AppStrings.markFinished, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+                "finished" -> Surface(
+                    Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), color = Color(0xFFE8F5E9)
+                ) {
+                    Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("☑️", fontSize = 20.sp)
+                        Text(AppStrings.finishedStatus, color = AppColors.Success,
+                            fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                    }
                 }
             }
         }
