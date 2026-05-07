@@ -161,7 +161,23 @@ fun ClientProfileScreen(vm: ClientViewModel, nav: NavController) {
                 }
             }
 
-            item { Spacer(Modifier.height(16.dp)) }
+            item {
+                Spacer(Modifier.height(4.dp))
+                OutlinedButton(
+                    onClick = {
+                        vm.logout()
+                        nav.navigate(Screen.RoleSelection.route) { popUpTo(0) { inclusive = true } }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFC62828))
+                ) {
+                    Icon(Icons.Default.ExitToApp, null, tint = Color(0xFFC62828), modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(AppStrings.signOut, fontSize = 15.sp, color = Color(0xFFC62828))
+                }
+                Spacer(Modifier.height(16.dp))
+            }
         }
     }
 
