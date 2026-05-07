@@ -87,6 +87,7 @@ fun RegisterScreen(vm: MainViewModel, nav: NavController) {
     var selectedService by remember { mutableStateOf("") }
     var certificate     by remember { mutableStateOf("") }
     var skillLevel      by remember { mutableStateOf("general") }
+    var localError      by remember { mutableStateOf("") }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -359,21 +360,25 @@ fun RegisterScreen(vm: MainViewModel, nav: NavController) {
 
                 Spacer(Modifier.height(28.dp))
 
-                if (vm.registerError.isNotEmpty()) {
+                if (localError.isNotEmpty() || vm.registerError.isNotEmpty()) {
                     Surface(
                         color = AppColors.Error.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(vm.registerError, color = AppColors.Error, fontSize = 13.sp, modifier = Modifier.padding(12.dp))
+                        Text(localError.ifEmpty { vm.registerError }, color = AppColors.Error, fontSize = 13.sp, modifier = Modifier.padding(12.dp))
                     }
                     Spacer(Modifier.height(12.dp))
                 }
 
                 Button(
                     onClick = {
-                        if (password.length >= 6 && password == confirmPassword) {
-                            vm.registerAsync(
+                        localError = ""
+                        vm.clearRegisterError()
+                        when {
+                            password.length < 6   -> localError = AppStrings.passwordHint
+                            password != confirmPassword -> localError = AppStrings.passwordMismatch
+                            else -> vm.registerAsync(
                                 name.trim(), phone.trim(), email.trim(), password,
                                 nid.trim(), selectedPhoto, baseFee, selectedService, certificate,
                                 skillLevel
