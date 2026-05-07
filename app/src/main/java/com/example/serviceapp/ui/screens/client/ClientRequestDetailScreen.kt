@@ -294,8 +294,7 @@ private fun RatingCard(
         }
     }
 }
-
-@Composable
+    
 @Composable
 private fun StarRow(selected: Int, onRate: (Int) -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
