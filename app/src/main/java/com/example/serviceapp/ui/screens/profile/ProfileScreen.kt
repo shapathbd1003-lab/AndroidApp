@@ -347,22 +347,35 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                         colors = CardDefaults.cardColors(containerColor = AppColors.Surface),
                         elevation = CardDefaults.cardElevation(2.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(14.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    Modifier.size(36.dp).background(AppColors.PrimaryContainer, RoundedCornerShape(8.dp)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(Icons.Default.List, null, tint = AppColors.Primary, modifier = Modifier.size(18.dp))
+                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                    Box(
+                                        Modifier.size(36.dp).background(AppColors.PrimaryContainer, RoundedCornerShape(8.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(Icons.Default.List, null, tint = AppColors.Primary, modifier = Modifier.size(18.dp))
+                                    }
+                                    Spacer(Modifier.width(12.dp))
+                                    Text(h.description, fontSize = 14.sp, color = AppColors.TextPrimary)
                                 }
-                                Spacer(Modifier.width(12.dp))
-                                Text(h.description, fontSize = 14.sp, color = AppColors.TextPrimary)
+                                Text("৳ ${h.earning.toInt()}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = AppColors.Success)
                             }
-                            Text("৳ ${h.earning.toInt()}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = AppColors.Success)
+                            if (h.clientName.isNotBlank() || h.clientRating > 0) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(start = 48.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    if (h.clientName.isNotBlank())
+                                        Text("${AppStrings.clientLabel}: ${h.clientName}", fontSize = 12.sp, color = AppColors.TextSecondary)
+                                    if (h.clientRating > 0)
+                                        Text("${"⭐".repeat(h.clientRating)}", fontSize = 12.sp)
+                                }
+                            }
                         }
                     }
                 }

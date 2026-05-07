@@ -112,6 +112,7 @@ private fun RequestCard(req: ServiceRequest, onClick: () -> Unit) {
         "finished", "completed"                      -> Color(0xFF2E7D32) to AppStrings.statusCompleted
         "cancelled", "cancelled_by_client",
         "cancelled_by_provider"                      -> Color(0xFF757575) to AppStrings.statusCancelled
+        "no_provider"                                -> Color(0xFFC62828) to AppStrings.noProviderFound
         else                                         -> Color(0xFFE65100) to AppStrings.statusPending
     }
 

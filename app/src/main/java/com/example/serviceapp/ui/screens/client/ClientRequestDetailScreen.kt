@@ -141,6 +141,7 @@ private fun StatusCard(req: ServiceRequest) {
         "finished", "completed"-> listOf(Color(0xFFE8F5E9), Color(0xFF2E7D32), "☑️", AppStrings.jobFinished)
         "cancelled", "cancelled_by_client", "cancelled_by_provider"
                                -> listOf(Color(0xFFFFEBEE), Color(0xFFC62828), "❌", AppStrings.requestCancelledMsg)
+        "no_provider"          -> listOf(Color(0xFFFFEBEE), Color(0xFFC62828), "😔", AppStrings.noProviderFound)
         else                   -> listOf(Color(0xFFFFF8E1), Color(0xFFE65100), "⏳", AppStrings.waitingForProvider)
     }
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = bg as Color)) {
@@ -267,7 +268,7 @@ private fun RatingCard(
 
             // Provider behavior rating
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN) "মিস্ত্রির আচরণ ও ব্যবহার" else "Provider behavior",
+                Text(AppStrings.providerBehaviorLabel,
                     fontSize = 12.sp, color = Color(0xFF757575), fontWeight = FontWeight.SemiBold)
                 StarRow(providerRating, onProviderRate)
                 if (providerRating > 0) Text(AppStrings.starLabel(providerRating), fontSize = 13.sp, color = Color(0xFFFFA000), fontWeight = FontWeight.SemiBold)
@@ -277,7 +278,7 @@ private fun RatingCard(
 
             // Service quality rating
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN) "কাজের মান ও গুণমান" else "Service quality",
+                Text(AppStrings.serviceQualityLabel,
                     fontSize = 12.sp, color = Color(0xFF757575), fontWeight = FontWeight.SemiBold)
                 StarRow(serviceRating, onServiceRate)
                 if (serviceRating > 0) Text(AppStrings.starLabel(serviceRating), fontSize = 13.sp, color = Color(0xFF1565C0), fontWeight = FontWeight.SemiBold)

@@ -252,12 +252,19 @@ private fun HistoryCard(req: ServiceRequest, nav: NavController) {
         elevation = CardDefaults.cardElevation(1.dp)
     ) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(AppStrings.serviceTypeName(req.serviceType), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF212121))
-                Text(label, fontSize = 12.sp, color = Color(0xFF424242))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text(AppStrings.serviceTypeName(req.serviceType), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF212121), modifier = Modifier.weight(1f))
+                val price = if (req.agreedPrice > 0) req.agreedPrice else req.providerBaseFee
+                if (price > 0) Text("৳ ${price.toInt()}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
             }
+            Text(label, fontSize = 11.sp, color = Color(0xFF757575))
             if (req.providerName.isNotBlank()) Text("${AppStrings.providerLabel}: ${req.providerName}", fontSize = 12.sp, color = Color(0xFF757575))
-            if (req.rating > 0) Text("${AppStrings.ratingLabel}: ${"⭐".repeat(req.rating)}", fontSize = 13.sp)
+            if (req.rating > 0 || req.serviceRating > 0) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (req.rating > 0)        Text("👤 ${"⭐".repeat(req.rating)}", fontSize = 13.sp)
+                    if (req.serviceRating > 0) Text("🔧 ${"⭐".repeat(req.serviceRating)}", fontSize = 13.sp)
+                }
+            }
             if (req.reviewComment.isNotBlank()) Text("\"${req.reviewComment}\"", fontSize = 12.sp, color = Color(0xFF424242))
         }
     }
