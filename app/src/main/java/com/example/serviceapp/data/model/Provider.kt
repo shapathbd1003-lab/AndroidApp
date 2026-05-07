@@ -1,5 +1,8 @@
 package com.example.serviceapp.data.model
 
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
+
 data class Provider(
     val id: String,
     var name: String,
@@ -13,7 +16,7 @@ data class Provider(
     var rating: Double = 4.5,
     var due: Double = 0.0,
     var advance: Double = 0.0,
-    val history: MutableList<ServiceHistory> = mutableListOf(),
+    val history: SnapshotStateList<ServiceHistory> = mutableStateListOf(),
     var certificate: String = "",
     var isApproved: Boolean? = null,   // null = pending, true = approved, false = rejected
     var skillLevel: String = "general",// "general" | "professional" | "expert"
