@@ -82,9 +82,9 @@ class ClientViewModel : ViewModel() {
         viewModelScope.launch { ClientRepository.disagreeWithProvider(requestId) }
     }
 
-    fun completeAndRate(requestId: String, rating: Int, comment: String = "", onDone: () -> Unit) {
+    fun completeAndRate(requestId: String, rating: Int, serviceRating: Int = 0, comment: String = "", onDone: () -> Unit) {
         viewModelScope.launch {
-            ClientRepository.completeAndRate(requestId, rating, comment)
+            ClientRepository.completeAndRate(requestId, rating, serviceRating, comment)
             onDone()
         }
     }

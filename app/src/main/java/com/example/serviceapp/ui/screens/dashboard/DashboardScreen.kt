@@ -178,6 +178,20 @@ fun DashboardScreen(vm: MainViewModel) {
                 InfoTile(Modifier.weight(1f), AppStrings.jobs, "${vm.provider?.history?.size ?: 0}", Color(0xFFF3E5F5), Color(0xFF6A1B9A))
             }
 
+            // ── Test button: add points quickly ──────────────────────────────
+            Spacer(Modifier.height(12.dp))
+            androidx.compose.material3.OutlinedButton(
+                onClick = { vm.addTestPoints(500) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+                colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFFE65100)
+                ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE65100).copy(alpha = 0.5f))
+            ) {
+                Text("🧪 +500 ${AppStrings.pointsLabel} (test)", fontSize = 13.sp)
+            }
+
             if (p.history.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))
                 Text(AppStrings.recentActivity, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)

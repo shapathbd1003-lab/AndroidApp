@@ -119,10 +119,11 @@ object ClientRepository {
     }
 
     // ── Complete + review ─────────────────────────────────────────────────────
-    suspend fun completeAndRate(requestId: String, rating: Int, comment: String = ""): Result<Unit> = runCatching {
+    suspend fun completeAndRate(requestId: String, rating: Int, serviceRating: Int = 0, comment: String = ""): Result<Unit> = runCatching {
         db.collection("requests").document(requestId).update(mapOf(
-            "status"        to "completed",
+            "status"        to "finished",
             "rating"        to rating,
+            "serviceRating" to serviceRating,
             "reviewComment" to comment,
             "completedAt"   to FieldValue.serverTimestamp()
         )).await()
@@ -208,7 +209,8 @@ object ClientRepository {
                         providerPhone   = doc.getString("providerPhone")  ?: "",
                         providerRating  = doc.getDouble("providerRating") ?: 0.0,
                         providerBaseFee = doc.getDouble("providerBaseFee") ?: 0.0,
-                        rating          = (doc.getLong("rating")  ?: 0).toInt(),
+                        rating          = (doc.getLong("rating")        ?: 0).toInt(),
+                        serviceRating   = (doc.getLong("serviceRating")  ?: 0).toInt(),
                         reviewComment   = doc.getString("reviewComment")  ?: "",
                         problemType     = doc.getString("problemType")    ?: "normal",
                         lat             = doc.getDouble("lat")            ?: 0.0,

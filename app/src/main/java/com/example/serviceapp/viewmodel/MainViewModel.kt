@@ -90,9 +90,11 @@ class MainViewModel : ViewModel() {
 
     // ── Simulation ───────────────────────────────────────────────────────────
 
-    val points get() = FakeRepository.provider?.points ?: 0
+    // pointsState is a reactive mutableStateOf so UI recomposes when points change
+    val points get() = FakeRepository.pointsState
     val hasEnoughPoints get() = points >= 400
 
+    fun addTestPoints(amount: Int)                    = FakeRepository.addPoints(amount)
     fun clearHistory()                               = FakeRepository.clearHistory()
     fun accept(job: Job): Boolean                    = FakeRepository.accept(job)
     fun markOnTheWay(jobId: String)                  = FakeRepository.markOnTheWay(jobId)

@@ -126,11 +126,19 @@ fun OsmMapPickerDialog(
                 AndroidView(
                     factory = { ctx ->
                         WebView(ctx).apply {
-                            settings.javaScriptEnabled = true
-                            settings.domStorageEnabled  = true
+                            settings.javaScriptEnabled    = true
+                            settings.domStorageEnabled    = true
+                            settings.loadWithOverviewMode = true
+                            settings.useWideViewPort      = true
+                            @Suppress("DEPRECATION")
+                            settings.mixedContentMode     = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                             webViewClient = WebViewClient()
                             addJavascriptInterface(LocationBridge(), "Android")
-                            loadDataWithBaseURL(null, mapHtml, "text/html", "utf-8", null)
+                            // Base URL must match a real domain so HTTPS CDN links load
+                            loadDataWithBaseURL(
+                                "https://openstreetmap.org",
+                                mapHtml, "text/html", "utf-8", null
+                            )
                         }
                     },
                     modifier = Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(8.dp))

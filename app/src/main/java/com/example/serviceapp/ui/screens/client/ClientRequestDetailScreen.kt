@@ -32,8 +32,10 @@ import com.example.serviceapp.viewmodel.ClientViewModel
 fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavController) {
     val request        = vm.requests.find { it.id == requestId }
     val purple         = Color(0xFF6A1B9A)
-    var selectedRating by remember { mutableStateOf(0) }
+    var providerRating by remember { mutableStateOf(0) }  // provider behavior
+    var serviceRating  by remember { mutableStateOf(0) }  // service quality
     var reviewText     by remember { mutableStateOf("") }
+    val selectedRating = providerRating // kept for compat
 
     Column(Modifier.fillMaxSize().background(Color(0xFFF3E5F5))) {
         // Header
@@ -71,7 +73,8 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
             if (request.minRating > 0 || request.maxPrice > 0) FilterSummaryCard(request)
             if (request.status == "awaiting_approval") ProviderApprovalCard(request)
             else if (request.status == "accepted" || request.status == "completed") ProviderInfoCard(request)
-            if (request.status == "completed" && request.rating == 0) RatingCard(selectedRating, reviewText, { selectedRating = it }, { reviewText = it })
+            if ((request.status == "finished" || request.status == "completed") && request.rating == 0)
+                RatingCard(providerRating, serviceRating, reviewText, { providerRating = it }, { serviceRating = it }, { reviewText = it })
             if (request.status == "completed" && request.rating > 0) CompletedReviewCard(request)
         }
 
@@ -111,13 +114,13 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                 "on_the_way", "arrived", "working" -> { /* Provider is handling it */ }
                 "finished", "completed" -> if (request.rating == 0) Button(
                     onClick = {
-                        if (selectedRating > 0) {
-                            vm.completeAndRate(request.id, selectedRating, reviewText) { nav.popBackStack() }
+                        if (providerRating > 0 || serviceRating > 0) {
+                            vm.completeAndRate(request.id, providerRating, serviceRating, reviewText) { nav.popBackStack() }
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(14.dp),
-                    enabled = selectedRating > 0,
+                    enabled = providerRating > 0 || serviceRating > 0,
                     colors = ButtonDefaults.buttonColors(containerColor = purple, disabledContainerColor = Color(0xFFBDBDBD))
                 ) {
                     Text(AppStrings.submitReviewBtn, fontSize = 15.sp, fontWeight = FontWeight.Bold)
@@ -254,37 +257,56 @@ private fun ProviderInfoCard(req: ServiceRequest) {
 }
 
 @Composable
-private fun RatingCard(selected: Int, comment: String, onRate: (Int) -> Unit, onComment: (String) -> Unit) {
+private fun RatingCard(
+    providerRating: Int, serviceRating: Int, comment: String,
+    onProviderRate: (Int) -> Unit, onServiceRate: (Int) -> Unit, onComment: (String) -> Unit
+) {
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(2.dp)) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text(AppStrings.rateAndReview, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                (1..5).forEach { star ->
-                    IconButton(onClick = { onRate(star) }, modifier = Modifier.size(44.dp)) {
-                        Icon(
-                            if (star <= selected) Icons.Default.Star else Icons.Default.StarBorder,
-                            null,
-                            tint = if (star <= selected) Color(0xFFFFA000) else Color(0xFFBDBDBD),
-                            modifier = Modifier.size(36.dp)
-                        )
-                    }
-                }
+            // Provider behavior rating
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN) "মিস্ত্রির আচরণ ও ব্যবহার" else "Provider behavior",
+                    fontSize = 12.sp, color = Color(0xFF757575), fontWeight = FontWeight.SemiBold)
+                StarRow(providerRating, onProviderRate)
+                if (providerRating > 0) Text(AppStrings.starLabel(providerRating), fontSize = 13.sp, color = Color(0xFFFFA000), fontWeight = FontWeight.SemiBold)
             }
-            if (selected > 0) {
-                val label = when (selected) { 1 -> AppStrings.starLabel(1) 2 -> AppStrings.starLabel(2) 3 -> AppStrings.starLabel(3) 4 -> AppStrings.starLabel(4) else -> AppStrings.starLabel(5) }
-                Text(label, fontSize = 14.sp, color = Color(0xFFFFA000), fontWeight = FontWeight.SemiBold)
+
+            HorizontalDivider()
+
+            // Service quality rating
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN) "কাজের মান ও গুণমান" else "Service quality",
+                    fontSize = 12.sp, color = Color(0xFF757575), fontWeight = FontWeight.SemiBold)
+                StarRow(serviceRating, onServiceRate)
+                if (serviceRating > 0) Text(AppStrings.starLabel(serviceRating), fontSize = 13.sp, color = Color(0xFF1565C0), fontWeight = FontWeight.SemiBold)
             }
 
             OutlinedTextField(
-                value = comment,
-                onValueChange = onComment,
-                placeholder = { Text("আপনার অভিজ্ঞতা লিখুন (ঐচ্ছিক)", color = Color(0xFFBDBDBD)) },
-                modifier = Modifier.fillMaxWidth().height(100.dp),
+                value = comment, onValueChange = onComment,
+                placeholder = { Text(AppStrings.reviewHint, color = Color(0xFFBDBDBD)) },
+                modifier = Modifier.fillMaxWidth().height(90.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF6A1B9A), cursorColor = Color(0xFF6A1B9A)),
-                maxLines = 4
+                maxLines = 3
             )
+        }
+    }
+}
+
+@Composable
+@Composable
+private fun StarRow(selected: Int, onRate: (Int) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        (1..5).forEach { star ->
+            IconButton(onClick = { onRate(star) }, modifier = Modifier.size(40.dp)) {
+                Icon(
+                    if (star <= selected) Icons.Default.Star else Icons.Default.StarBorder, null,
+                    tint = if (star <= selected) Color(0xFFFFA000) else Color(0xFFBDBDBD),
+                    modifier = Modifier.size(32.dp)
+                )
+            }
         }
     }
 }
@@ -294,7 +316,12 @@ private fun CompletedReviewCard(req: ServiceRequest) {
     Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(AppStrings.yourReview, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
-            Text("${"⭐".repeat(req.rating)} (${req.rating}/5)", fontSize = 16.sp)
+            if (req.rating > 0)        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("👤", fontSize = 13.sp); Text("${"⭐".repeat(req.rating)}", fontSize = 14.sp)
+            }
+            if (req.serviceRating > 0) Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("🔧", fontSize = 13.sp); Text("${"⭐".repeat(req.serviceRating)}", fontSize = 14.sp)
+            }
             if (req.reviewComment.isNotBlank()) Text("\"${req.reviewComment}\"", fontSize = 13.sp, color = Color(0xFF424242))
         }
     }
