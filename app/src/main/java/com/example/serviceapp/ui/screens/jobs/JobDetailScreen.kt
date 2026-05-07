@@ -1,36 +1,16 @@
 package com.example.serviceapp.ui.screens.jobs
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -40,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.serviceapp.ui.components.FakeMapView
+import com.example.serviceapp.ui.components.OpenMapsButton
 import com.example.serviceapp.ui.theme.AppColors
 import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.viewmodel.MainViewModel
@@ -49,33 +29,55 @@ import com.example.serviceapp.viewmodel.MainViewModel
 fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
 
     val job = vm.jobs.find { it.id == id } ?: run {
-        Box(
-            Modifier.fillMaxSize().background(AppColors.Background),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(Modifier.fillMaxSize().background(AppColors.Background), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(AppStrings.jobNoLonger, color = AppColors.TextSecondary)
                 Spacer(Modifier.height(12.dp))
-                Button(
-                    onClick = { nav.popBackStack() },
-                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
-                ) { Text(AppStrings.goBack) }
+                Button(onClick = { nav.popBackStack() },
+                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)) {
+                    Text(AppStrings.goBack)
+                }
             }
         }
         return
     }
 
-    val isDone = job.status == "done"
-    val baseFee = vm.provider?.baseFee ?: 0.0
+    var showPriceDialog by remember { mutableStateOf(false) }
+    var customPrice     by remember { mutableStateOf(vm.provider?.baseFee?.toString() ?: "") }
+
+    // Price negotiation dialog
+    if (showPriceDialog) {
+        AlertDialog(
+            onDismissRequest = { showPriceDialog = false },
+            title   = { Text(AppStrings.setJobPrice) },
+            text    = {
+                OutlinedTextField(
+                    value = customPrice,
+                    onValueChange = { customPrice = it },
+                    label = { Text("৳ ${AppStrings.agreedPriceLabel}") },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    customPrice.toDoubleOrNull()?.let { vm.setAgreedPrice(job.id, it) }
+                    showPriceDialog = false
+                }) { Text(AppStrings.saveChanges) }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showPriceDialog = false }) { Text(AppStrings.cancelBtn) }
+            }
+        )
+    }
 
     Column(Modifier.fillMaxSize().background(AppColors.Background)) {
 
+        // Header
         Box(
-            Modifier
-                .fillMaxWidth()
+            Modifier.fillMaxWidth()
                 .background(Brush.verticalGradient(listOf(AppColors.Primary, AppColors.PrimaryLight)))
                 .statusBarsPadding()
-                .padding(top = 4.dp, bottom = 20.dp, start = 4.dp, end = 16.dp)
+                .padding(top = 4.dp, bottom = 16.dp, start = 4.dp, end = 16.dp)
         ) {
             Column {
                 IconButton(onClick = { nav.popBackStack() }) {
@@ -83,52 +85,37 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                 }
                 Spacer(Modifier.height(4.dp))
                 Row(Modifier.padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        AppStrings.jobDetail,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = if (isDone) AppColors.Success else Color(0xFF1565C0)
-                    ) {
-                        Text(
-                            if (isDone) "✓ ${AppStrings.completed}" else "● ${AppStrings.pending}",
-                            fontSize = 12.sp,
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
-                        )
+                    Text(AppStrings.jobDetail, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.weight(1f))
+                    // Status badge
+                    val (statusColor, statusLabel) = when (job.status) {
+                        "awaiting"   -> Color(0xFFFFF8E1) to AppStrings.awaitingClientApproval
+                        "agreed"     -> Color(0xFFE3F2FD) to AppStrings.clientAgreed
+                        "on_the_way" -> Color(0xFFE8EAF6) to AppStrings.onTheWayStatus
+                        "arrived"    -> Color(0xFFE8F5E9) to AppStrings.arrivedStatus
+                        "working"    -> Color(0xFFFFF3E0) to AppStrings.workingStatus
+                        "done"       -> Color(0xFFE8F5E9) to AppStrings.finishedStatus
+                        else         -> Color(0xFFE8EAF6) to AppStrings.pending
+                    }
+                    Surface(shape = RoundedCornerShape(20.dp), color = statusColor.copy(alpha = 0.9f)) {
+                        Text(statusLabel, fontSize = 11.sp, color = Color(0xFF212121), fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp))
                     }
                 }
             }
         }
 
-        Column(
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-        ) {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
 
-            Card(
-                Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+            // Job info card
+            Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = AppColors.Surface),
-                elevation = CardDefaults.cardElevation(3.dp)
-            ) {
+                elevation = CardDefaults.cardElevation(3.dp)) {
                 Column(Modifier.padding(18.dp)) {
                     Text(job.description, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
-
                     if (job.overview.isNotBlank()) {
                         Spacer(Modifier.height(12.dp))
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .background(AppColors.Background, RoundedCornerShape(10.dp))
-                                .padding(12.dp)
-                        ) {
+                        Box(Modifier.fillMaxWidth().background(AppColors.Background, RoundedCornerShape(10.dp)).padding(12.dp)) {
                             Column {
                                 Text(AppStrings.problemOverview, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = AppColors.Primary)
                                 Spacer(Modifier.height(4.dp))
@@ -136,52 +123,95 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                             }
                         }
                     }
-
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(14.dp))
                     InfoRow(Icons.Default.LocationOn, AppStrings.address, job.address, Color(0xFF1565C0))
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(10.dp))
                     InfoRow(Icons.Default.Phone, AppStrings.contact, job.phone, Color(0xFF6A1B9A))
-                    Spacer(Modifier.height(12.dp)) }
+                }
             }
 
-            Spacer(Modifier.height(16.dp))
+            // Map for navigation when going to client
+            if (job.status in listOf("agreed", "on_the_way", "arrived", "working")) {
+                OpenMapsButton(address = job.address, color = AppColors.Primary)
+            }
 
-            if (!isDone) {
-                Button(
-                    onClick = { vm.accept(job) },
-                    modifier = Modifier.fillMaxWidth().height(54.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
-                ) {
-                    Icon(Icons.Default.Check, null, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(AppStrings.acceptJob, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                }
-            } else {
-                Card(
-                    Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))
-                ) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(Icons.Default.Check, null, tint = AppColors.Success, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "${AppStrings.jobAccepted} · ৳ ${baseFee.toInt()} ${AppStrings.earned}",
-                            color = AppColors.Success,
-                            fontWeight = FontWeight.SemiBold
-                        )
+            // Price card
+            if (job.status in listOf("agreed", "on_the_way", "arrived")) {
+                Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = AppColors.PrimaryContainer)) {
+                    Row(Modifier.fillMaxWidth().padding(14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Column {
+                            Text(AppStrings.agreedPriceLabel, fontSize = 12.sp, color = AppColors.TextSecondary)
+                            Text("৳ ${(vm.provider?.baseFee ?: 0.0).toInt()} ${AppStrings.perService}",
+                                fontSize = 16.sp, fontWeight = FontWeight.Bold, color = AppColors.Primary)
+                        }
+                        OutlinedButton(onClick = { showPriceDialog = true }, shape = RoundedCornerShape(8.dp)) {
+                            Text(AppStrings.setJobPrice, fontSize = 12.sp)
+                        }
                     }
                 }
+            }
 
-                Spacer(Modifier.height(16.dp))
-                Text(AppStrings.jobLocation, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
-                Spacer(Modifier.height(8.dp))
-                FakeMapView(address = job.address, modifier = Modifier.fillMaxWidth().height(220.dp))
+            // Completed card
+            if (job.status == "done") {
+                Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("☑️", fontSize = 24.sp)
+                        Column {
+                            Text(AppStrings.finishedStatus, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = AppColors.Success)
+                            Text("৳ ${(vm.provider?.baseFee ?: 0.0).toInt()} ${AppStrings.earned}",
+                                fontSize = 13.sp, color = AppColors.Success)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Action buttons
+        Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp)) {
+            when (job.status) {
+                "pending" -> {
+                    if (!vm.hasEnoughPoints) {
+                        Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), color = Color(0xFFFFEBEE)) {
+                            Text(AppStrings.insufficientPoints, color = Color(0xFFC62828), fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(14.dp))
+                        }
+                    } else {
+                        Button(onClick = { vm.accept(job); nav.popBackStack() },
+                            modifier = Modifier.fillMaxWidth().height(54.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)) {
+                            Text(AppStrings.acceptJob, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+                "awaiting" -> Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), color = Color(0xFFFFF8E1)) {
+                    Text(AppStrings.awaitingClientApproval, color = Color(0xFFE65100), fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(14.dp))
+                }
+                "agreed" -> Button(onClick = { vm.markOnTheWay(job.id) },
+                    modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)) {
+                    Text(AppStrings.markOnTheWay, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+                "on_the_way" -> Button(onClick = { vm.markArrived(job.id) },
+                    modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))) {
+                    Text(AppStrings.markArrived, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+                "arrived" -> Button(onClick = { vm.markWorking(job.id) },
+                    modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100))) {
+                    Text(AppStrings.markWorking, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+                "working" -> Button(onClick = { vm.markFinished(job.id); nav.popBackStack() },
+                    modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))) {
+                    Text(AppStrings.markFinished, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
             }
         }
     }
@@ -190,10 +220,8 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
 @Composable
 private fun InfoRow(icon: ImageVector, label: String, value: String, iconTint: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier.size(36.dp).background(iconTint.copy(alpha = 0.1f), RoundedCornerShape(8.dp)),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(Modifier.size(36.dp).background(iconTint.copy(alpha = 0.1f), RoundedCornerShape(8.dp)),
+            contentAlignment = Alignment.Center) {
             Icon(icon, null, tint = iconTint, modifier = Modifier.size(18.dp))
         }
         Spacer(Modifier.width(12.dp))

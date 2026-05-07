@@ -25,6 +25,8 @@ object FakeRepository {
     var provider   by mutableStateOf<Provider?>(null)
     val jobs        = mutableStateListOf<Job>()
     var loggedIn   by mutableStateOf(false)
+    // Separate reactive state for points so UI recomposes when changed
+    var pointsState by mutableStateOf(500)
 
     private val auth: FirebaseAuth      get() = FirebaseAuth.getInstance()
     private val db:   FirebaseFirestore get() = FirebaseFirestore.getInstance()
@@ -117,6 +119,14 @@ object FakeRepository {
             points       = (doc.getLong("points")        ?: 500).toInt(),
             isApproved   = if (approvedRaw == null) null else approvedRaw as? Boolean
         )
+        pointsState = provider?.points ?: 500
+
+        // If provider doesn't have points stored yet, save 500
+        if (doc.getLong("points") == null) {
+            CoroutineScope(Dispatchers.IO).launch {
+                runCatching { db.collection("providers").document(uid).update(mapOf("points" to 500)).await() }
+            }
+        }
     }
 
     // ── Real-time listeners ───────────────────────────────────────────────────
@@ -269,8 +279,9 @@ object FakeRepository {
         // Points check — need 400 to accept a job
         if (p.points < 400) return false
 
-        // Deduct 400 points immediately
+        // Deduct 400 points immediately + sync reactive state
         p.points -= 400
+        pointsState = p.points
 
         // Optimistic: move from pending to awaiting in local list immediately
         pendingJobs.remove(job.id)
@@ -346,6 +357,7 @@ object FakeRepository {
         val p   = provider ?: return
         val uid = auth.currentUser?.uid ?: return
         p.points += amount
+        pointsState = p.points
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
                 db.collection("providers").document(uid).update(mapOf("points" to p.points)).await()
