@@ -290,7 +290,11 @@ object FakeRepository {
     // ── Status transitions ────────────────────────────────────────────────────
     private fun updateJobStatus(jobId: String, localStatus: String, fsStatus: String, timeField: String) {
         val idx = jobs.indexOfFirst { it.id == jobId }
-        if (idx >= 0) jobs[idx] = jobs[idx].copy(status = localStatus)
+        if (idx >= 0) {
+            val updated = jobs[idx].copy(status = localStatus)
+            jobs[idx] = updated
+            myJobs[jobId] = updated  // keep myJobs in sync so rebuildJobList() never reverts status
+        }
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
                 db.collection("requests").document(jobId).update(mapOf(
