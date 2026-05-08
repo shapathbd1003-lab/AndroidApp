@@ -166,9 +166,12 @@ object FakeRepository {
         myJobsListener = db.collection("requests")
             .whereEqualTo("providerId", uid)
             .addSnapshotListener { snaps, _ ->
-                myJobs.clear()
+                val firestoreIds = mutableSetOf<String>()
+
                 snaps?.documents?.forEach { doc ->
-                    locallyAccepted.remove(doc.id)  // Firestore confirmed this job
+                    firestoreIds.add(doc.id)
+                    locallyAccepted.remove(doc.id)
+
                     fun makeJob(fsStatus: String) = Job(
                         id          = doc.id,
                         description = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
@@ -182,12 +185,20 @@ object FakeRepository {
                     )
 
                     when (val status = doc.getString("status") ?: return@forEach) {
-                        "awaiting_approval" -> myJobs[doc.id] = makeJob("awaiting")
-                        "accepted"          -> myJobs[doc.id] = makeJob("agreed")
-                        "on_the_way"        -> myJobs[doc.id] = makeJob("on_the_way")
-                        "arrived"           -> myJobs[doc.id] = makeJob("arrived")
-                        "working"           -> myJobs[doc.id] = makeJob("working")
+                        "awaiting_approval", "accepted", "on_the_way", "arrived", "working" -> {
+                            val fsLocal = when (status) {
+                                "awaiting_approval" -> "awaiting"
+                                "accepted"          -> "agreed"
+                                else                -> status
+                            }
+                            val currentPriority = jobStatusPriority(myJobs[doc.id]?.status)
+                            val newPriority      = jobStatusPriority(fsLocal)
+                            if (newPriority >= currentPriority) {
+                                myJobs[doc.id] = makeJob(fsLocal)
+                            }
+                        }
                         "completed", "finished" -> {
+                            myJobs.remove(doc.id)
                             val prov = provider
                             if (prov != null && prov.history.none { it.id == doc.id }) {
                                 val desc         = AppStrings.serviceTypeName(doc.getString("serviceType") ?: "")
@@ -207,13 +218,28 @@ object FakeRepository {
                                 }
                             }
                         }
-                        "cancelled", "cancelled_by_client", "cancelled_by_provider" -> { /* removed */ }
+                        "cancelled", "cancelled_by_client", "cancelled_by_provider" -> {
+                            myJobs.remove(doc.id)
+                        }
                     }
                 }
-                // Restore locally-accepted jobs not yet confirmed by Firestore
+
+                myJobs.keys.toList().forEach { id ->
+                    if (id !in firestoreIds && id !in locallyAccepted) myJobs.remove(id)
+                }
+
                 locallyAccepted.forEach { (id, job) -> myJobs[id] = job }
                 rebuildJobList()
             }
+    }
+
+    private fun jobStatusPriority(localStatus: String?) = when (localStatus) {
+        "awaiting"   -> 1
+        "agreed"     -> 2
+        "on_the_way" -> 3
+        "arrived"    -> 4
+        "working"    -> 5
+        else         -> 0
     }
 
     private fun rebuildJobList() {
