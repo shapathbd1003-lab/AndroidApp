@@ -30,16 +30,11 @@ object FakeRepository {
     private val auth: FirebaseAuth      get() = FirebaseAuth.getInstance()
     private val db:   FirebaseFirestore get() = FirebaseFirestore.getInstance()
 
-    private var pendingListener:  ListenerRegistration? = null
-    private var myJobsListener:   ListenerRegistration? = null
+    // Single listener replaces the old pendingListener + myJobsListener pair.
+    // Two listeners caused an unfixable race: whichever fired last would
+    // overwrite the other's stale data, causing status to cycle backwards.
+    private var requestsListener: ListenerRegistration? = null
     private var approvalListener: ListenerRegistration? = null
-
-    // Firestore is the single source of truth.
-    // The Firestore SDK fires listeners immediately from its local write cache,
-    // so all status transitions just write to Firestore and let the listeners
-    // rebuild the list. No optimistic updates, no local state to go stale.
-    private val pendingJobs = mutableMapOf<String, Job>()
-    private val myJobs      = mutableMapOf<String, Job>()
 
     val serviceTypes get() = ServiceData.categories.map { it.id }
 
@@ -52,7 +47,6 @@ object FakeRepository {
     ): Result<Unit> = runCatching {
         val result = auth.createUserWithEmailAndPassword(email.trim(), password).await()
         val uid    = result.user?.uid ?: error("No user ID returned")
-
         db.collection("providers").document(uid).set(hashMapOf<String, Any?>(
             "name"         to name.trim(),
             "phone"        to phone.trim(),
@@ -69,7 +63,6 @@ object FakeRepository {
             "isApproved"   to null,
             "createdAt"    to FieldValue.serverTimestamp()
         )).await()
-
         provider = Provider(
             id = uid, name = name.trim(), phone = phone.trim(),
             email = email.trim(), photo = photo,
@@ -127,45 +120,66 @@ object FakeRepository {
         }
     }
 
-    // ── Real-time listeners ───────────────────────────────────────────────────
+    // ── Single listener ───────────────────────────────────────────────────────
+    // Queries all requests for this provider's service type — no status filter.
+    // Client-side we show: pending jobs (available to accept) + own jobs (any status).
+    //
+    // Why single listener: with two listeners (one for pending, one for own jobs)
+    // there is an unavoidable race where the snapshot from one listener is stale
+    // relative to the other, causing the UI to show the wrong status. One listener,
+    // one snapshot, one rebuild — no coordination needed, no race possible.
     fun startListeningToRequests() {
         val p   = provider ?: return
         val uid = auth.currentUser?.uid ?: return
         val allowed = ServiceData.allowedTypes(p.skillLevel)
 
-        // Listener 1: all pending jobs for this service type
-        pendingListener?.remove()
-        pendingListener = db.collection("requests")
+        requestsListener?.remove()
+        requestsListener = db.collection("requests")
             .whereEqualTo("serviceType", p.serviceType)
-            .whereEqualTo("status", "pending")
-            .addSnapshotListener { snaps, _ ->
-                pendingJobs.clear()
-                snaps?.documents?.forEach { doc ->
-                    val problemType = doc.getString("problemType") ?: "normal"
-                    if (problemType !in allowed) return@forEach
-                    pendingJobs[doc.id] = docToJob(doc, "pending")
-                }
-                rebuildJobList()
-            }
+            .addSnapshotListener { snaps, err ->
+                if (err != null || snaps == null) return@addSnapshotListener
 
-        // Listener 2: all jobs the provider owns (any status)
-        myJobsListener?.remove()
-        myJobsListener = db.collection("requests")
-            .whereEqualTo("providerId", uid)
-            .addSnapshotListener { snaps, _ ->
-                myJobs.clear()
-                snaps?.documents?.forEach { doc ->
-                    when (val status = doc.getString("status") ?: return@forEach) {
-                        "awaiting_approval" -> myJobs[doc.id] = docToJob(doc, "awaiting")
-                        "accepted"          -> myJobs[doc.id] = docToJob(doc, "agreed")
-                        "on_the_way"        -> myJobs[doc.id] = docToJob(doc, "on_the_way")
-                        "arrived"           -> myJobs[doc.id] = docToJob(doc, "arrived")
-                        "working"           -> myJobs[doc.id] = docToJob(doc, "working")
-                        "finished", "completed" -> addToHistory(doc)
-                        // cancelled variants: omit from active list
+                val newJobs = mutableMapOf<String, Job>()
+
+                snaps.documents.forEach { doc ->
+                    val status        = doc.getString("status")     ?: return@forEach
+                    val docProviderId = doc.getString("providerId") ?: ""
+                    val problemType   = doc.getString("problemType") ?: "normal"
+
+                    when {
+                        // Unassigned pending job this provider's skill covers
+                        status == "pending" && problemType in allowed -> {
+                            newJobs[doc.id] = docToJob(doc, "pending")
+                        }
+                        // This provider's own job — any non-pending status
+                        docProviderId == uid -> {
+                            when (status) {
+                                "awaiting_approval" -> newJobs[doc.id] = docToJob(doc, "awaiting")
+                                "accepted"          -> newJobs[doc.id] = docToJob(doc, "agreed")
+                                "on_the_way"        -> newJobs[doc.id] = docToJob(doc, "on_the_way")
+                                "arrived"           -> newJobs[doc.id] = docToJob(doc, "arrived")
+                                "working"           -> newJobs[doc.id] = docToJob(doc, "working")
+                                "finished", "completed" -> addToHistory(doc)
+                                // cancelled / other terminal → don't show in active list
+                            }
+                        }
+                        // Someone else's in-progress job — not relevant, skip
                     }
                 }
-                rebuildJobList()
+
+                val sorted = newJobs.values.sortedWith(compareBy(
+                    { when (it.status) {
+                        "agreed"     -> 0
+                        "arrived"    -> 1
+                        "working"    -> 1
+                        "on_the_way" -> 2
+                        "awaiting"   -> 3
+                        else         -> 4
+                    }},
+                    { if (it.distanceKm >= 0) it.distanceKm else Double.MAX_VALUE }
+                ))
+                jobs.clear()
+                jobs.addAll(sorted)
             }
     }
 
@@ -199,24 +213,6 @@ object FakeRepository {
         }
     }
 
-    private fun rebuildJobList() {
-        // myJobs always wins: a job the provider owns never shows as a new pending job
-        val merged = myJobs + pendingJobs.filterKeys { it !in myJobs }
-        val sorted = merged.values.sortedWith(compareBy(
-            { when (it.status) {
-                "agreed"     -> 0
-                "arrived"    -> 1
-                "working"    -> 1
-                "on_the_way" -> 2
-                "awaiting"   -> 3
-                else         -> 4
-            }},
-            { if (it.distanceKm >= 0) it.distanceKm else Double.MAX_VALUE }
-        ))
-        jobs.clear()
-        jobs.addAll(sorted)
-    }
-
     // ── Approval listener ─────────────────────────────────────────────────────
     fun listenForApproval(
         onApproved: () -> Unit,
@@ -232,7 +228,7 @@ object FakeRepository {
         }
     }
 
-    // ── Job actions — just write to Firestore, listeners update the UI ────────
+    // ── Job actions — write to Firestore, listener rebuilds the UI ────────────
     fun accept(job: Job): Boolean {
         val p   = provider ?: return false
         val uid = auth.currentUser?.uid ?: return false
@@ -331,11 +327,8 @@ object FakeRepository {
 
     fun logout() {
         auth.signOut()
-        pendingListener?.remove();  pendingListener  = null
-        myJobsListener?.remove();   myJobsListener   = null
-        approvalListener?.remove(); approvalListener = null
-        pendingJobs.clear()
-        myJobs.clear()
+        requestsListener?.remove();  requestsListener  = null
+        approvalListener?.remove();  approvalListener  = null
         loggedIn = false
         provider = null
         jobs.clear()
