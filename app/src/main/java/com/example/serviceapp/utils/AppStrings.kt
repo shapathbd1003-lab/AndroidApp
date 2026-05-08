@@ -313,5 +313,9 @@ object AppStrings {
     val serviceQualityLabel   get() = if (isBn) "কাজের মান ও গুণমান"       else "Service quality"
 
     // ── No-provider status ───────────────────────────────────────────────────
-    val noProviderFound get() = if (isBn) "😔 কোনো মিস্ত্রি পাওয়া যায়নি" else "😔 No provider available"
+    val noProviderFound          get() = if (isBn) "😔 কোনো মিস্ত্রি পাওয়া যায়নি" else "😔 No provider available"
+
+    // ── Job finish flow ──────────────────────────────────────────────────────
+    val waitingClientFinish get() = if (isBn) "⏳ গ্রাহকের নিশ্চিতকরণের অপেক্ষায়..." else "⏳ Waiting for client to confirm..."
+    val finishJobBtn        get() = if (isBn) "✅ কাজ সম্পন্ন হয়েছে" else "✅ Job is Done"
 }
