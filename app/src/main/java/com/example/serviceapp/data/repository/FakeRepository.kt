@@ -168,13 +168,10 @@ object FakeRepository {
         myJobsListener = db.collection("requests")
             .whereEqualTo("providerId", uid)
             .addSnapshotListener { snaps, _ ->
-                // Clear, but remember which IDs Firestore is now tracking
-                myJobs.clear()
                 val firestoreIds = mutableSetOf<String>()
 
                 snaps?.documents?.forEach { doc ->
                     firestoreIds.add(doc.id)
-                    // Firestore confirmed this job — no longer needs local tracking
                     locallyAccepted.remove(doc.id)
 
                     fun makeJob(fsStatus: String) = Job(
@@ -190,12 +187,25 @@ object FakeRepository {
                     )
 
                     when (val status = doc.getString("status") ?: return@forEach) {
-                        "awaiting_approval" -> myJobs[doc.id] = makeJob("awaiting")
-                        "accepted"          -> myJobs[doc.id] = makeJob("agreed")
-                        "on_the_way"        -> myJobs[doc.id] = makeJob("on_the_way")
-                        "arrived"           -> myJobs[doc.id] = makeJob("arrived")
-                        "working"           -> myJobs[doc.id] = makeJob("working")
+                        "awaiting_approval", "accepted", "on_the_way", "arrived", "working" -> {
+                            val fsLocal = when (status) {
+                                "awaiting_approval" -> "awaiting"
+                                "accepted"          -> "agreed"
+                                else                -> status
+                            }
+                            // Never let Firestore roll back to an earlier status.
+                            // If our local myJobs already has a higher-priority status
+                            // (e.g. provider pressed "On the way" but Firestore hasn't
+                            // echoed "on_the_way" back yet), keep the local state.
+                            val currentPriority = jobStatusPriority(myJobs[doc.id]?.status)
+                            val newPriority      = jobStatusPriority(fsLocal)
+                            if (newPriority >= currentPriority) {
+                                myJobs[doc.id] = makeJob(fsLocal)
+                            }
+                            // else: local is ahead — leave myJobs[doc.id] untouched
+                        }
                         "completed", "finished" -> {
+                            myJobs.remove(doc.id)
                             val prov = provider
                             if (prov != null && prov.history.none { it.id == doc.id }) {
                                 val desc         = AppStrings.serviceTypeName(doc.getString("serviceType") ?: "")
@@ -215,17 +225,32 @@ object FakeRepository {
                                 }
                             }
                         }
-                        "cancelled", "cancelled_by_client", "cancelled_by_provider" -> { /* not shown */ }
+                        "cancelled", "cancelled_by_client", "cancelled_by_provider" -> {
+                            myJobs.remove(doc.id)
+                        }
                     }
                 }
 
-                // Re-add jobs accepted locally but not yet visible in Firestore.
-                // This prevents the "insufficient points / accept button" flash that
-                // occurs when this listener fires before the accept() Firestore update
-                // has propagated (the job would otherwise fall back to pendingJobs).
+                // Remove jobs no longer in Firestore (deleted / moved out of query)
+                myJobs.keys.toList().forEach { id ->
+                    if (id !in firestoreIds && id !in locallyAccepted) myJobs.remove(id)
+                }
+
+                // Restore locally-accepted jobs not yet confirmed by Firestore
                 locallyAccepted.forEach { (id, job) -> myJobs[id] = job }
                 rebuildJobList()
             }
+    }
+
+    // Returns a numeric priority so we can refuse Firestore rollbacks.
+    // Terminal states (cancelled/finished) are handled separately and never stored in myJobs.
+    private fun jobStatusPriority(localStatus: String?) = when (localStatus) {
+        "awaiting"   -> 1
+        "agreed"     -> 2
+        "on_the_way" -> 3
+        "arrived"    -> 4
+        "working"    -> 5
+        else         -> 0
     }
 
     private fun rebuildJobList() {
