@@ -306,7 +306,16 @@ object FakeRepository {
     // ── Status transitions ────────────────────────────────────────────────────
     private fun updateJobStatus(jobId: String, localStatus: String, fsStatus: String, timeField: String) {
         val idx = jobs.indexOfFirst { it.id == jobId }
-        if (idx >= 0) jobs[idx] = jobs[idx].copy(status = localStatus)
+        if (idx >= 0) {
+            val updated = jobs[idx].copy(status = localStatus)
+            jobs[idx] = updated
+            // Keep myJobs in sync so rebuildJobList() never uses a stale status.
+            // Without this, any listener fire (e.g. pendingListener getting a new job)
+            // would call rebuildJobList() which rebuilds jobs from myJobs and revert
+            // the status to whatever myJobsListener last wrote — potentially several
+            // steps behind, leading to the Accept button reappearing.
+            myJobs[jobId] = updated
+        }
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
                 db.collection("requests").document(jobId).update(mapOf(
