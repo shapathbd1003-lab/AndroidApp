@@ -110,7 +110,7 @@ fun DashboardScreen(vm: MainViewModel) {
                                 shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
                                 color = if (pts >= 400) Color.White.copy(alpha = 0.2f) else Color(0xFFC62828).copy(alpha = 0.8f)
                             ) {
-                                Text("⭐ $pts pts", fontSize = 10.sp, color = Color.White,
+                                Text("⭐ $pts ${AppStrings.pointsLabel}", fontSize = 10.sp, color = Color.White,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
                             }
                         }

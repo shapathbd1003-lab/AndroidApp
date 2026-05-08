@@ -84,7 +84,7 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                 reviews.clear()
                 snaps.documents.forEach { doc ->
                     reviews.add(ReviewItem(
-                        clientName  = doc.getString("clientName")  ?: "গ্রাহক",
+                        clientName  = doc.getString("clientName")  ?: AppStrings.clientLabel,
                         serviceType = doc.getString("serviceType") ?: "",
                         rating      = (doc.getLong("rating") ?: 0).toInt(),
                         comment     = doc.getString("comment")     ?: ""
