@@ -73,7 +73,11 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
             if (request.minRating > 0 || request.maxPrice > 0) FilterSummaryCard(request)
             if (request.status == "awaiting_approval") ProviderApprovalCard(request)
             else if (request.status in listOf("accepted", "on_the_way", "arrived", "working", "finished", "completed")) ProviderInfoCard(request)
-            if ((request.status == "finished" || request.status == "completed") && request.rating == 0)
+            // Show rating card when provider is working (client finishes job)
+            // OR when already finished but not yet rated
+            val canRate = request.status == "working" ||
+                ((request.status == "finished" || request.status == "completed") && request.rating == 0)
+            if (canRate)
                 RatingCard(providerRating, serviceRating, reviewText, { providerRating = it }, { serviceRating = it }, { reviewText = it })
             if ((request.status == "finished" || request.status == "completed") && request.rating > 0) CompletedReviewCard(request)
         }
@@ -110,13 +114,23 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                         Text(AppStrings.agreeBtn, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
                 }
-                // In-progress statuses — show info only, no action for client
-                "on_the_way", "arrived", "working" -> { /* Provider is handling it */ }
+                // Provider traveling / at location — client just waits
+                "on_the_way", "arrived" -> { /* Provider is on the way */ }
+                // Provider is working — client marks job as done (with optional rating)
+                "working" -> Button(
+                    onClick = {
+                        vm.completeAndRate(request.id, providerRating, serviceRating, reviewText) { nav.popBackStack() }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = purple)
+                ) {
+                    Text(AppStrings.finishJobBtn, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                }
+                // Job already finished but not yet rated
                 "finished", "completed" -> if (request.rating == 0) Button(
                     onClick = {
-                        if (providerRating > 0 || serviceRating > 0) {
-                            vm.completeAndRate(request.id, providerRating, serviceRating, reviewText) { nav.popBackStack() }
-                        }
+                        vm.completeAndRate(request.id, providerRating, serviceRating, reviewText) { nav.popBackStack() }
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(14.dp),
