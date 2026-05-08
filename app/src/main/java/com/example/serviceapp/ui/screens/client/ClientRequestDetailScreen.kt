@@ -225,7 +225,7 @@ private fun ProviderApprovalCard(req: ServiceRequest) {
             if (completedJobs >= 0) {
                 InfoRow(AppStrings.completedJobsLabel, "$completedJobs ${AppStrings.jobs}")
             }
-            InfoRow("💰 ${AppStrings.providerFeeLbl}", "৳ ${req.providerBaseFee.toInt()} প্রতি সেবায়")
+            InfoRow("💰 ${AppStrings.providerFeeLbl}", "৳ ${req.providerBaseFee.toInt()} ${AppStrings.perService}")
             Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFFE8F5E9)) {
                 Text(
                     if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN)

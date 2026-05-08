@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -28,6 +29,12 @@ import com.example.serviceapp.viewmodel.ClientViewModel
 @Composable
 fun ClientDashboardScreen(vm: ClientViewModel, nav: NavController) {
     val purple = Color(0xFF6A1B9A)
+
+    // Safety net: restart the listener if it somehow wasn't started
+    // (e.g., rapid navigation before the session-restore coroutine completed)
+    LaunchedEffect(vm.loggedIn) {
+        if (vm.loggedIn) vm.ensureListening()
+    }
 
     Column(
         modifier = Modifier

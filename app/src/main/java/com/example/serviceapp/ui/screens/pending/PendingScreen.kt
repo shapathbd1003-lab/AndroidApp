@@ -32,7 +32,7 @@ fun PendingScreen(vm: MainViewModel, nav: NavController) {
         vm.startApprovalListener(
             onApproved = {
                 nav.navigate(Screen.Main.route) {
-                    popUpTo(Screen.Pending.route) { inclusive = true }
+                    popUpTo(0) { inclusive = true }
                 }
             },
             onRejected = { isRejected = true }

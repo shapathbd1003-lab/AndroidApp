@@ -102,6 +102,8 @@ class ClientViewModel : ViewModel() {
         requestsListener = ClientRepository.listenToRequests()
     }
 
+    fun ensureListening() { if (requestsListener == null) startListening() }
+
     fun logout() { requestsListener?.remove(); requestsListener = null; ClientRepository.logout() }
 
     override fun onCleared() { super.onCleared(); requestsListener?.remove() }

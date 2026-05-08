@@ -47,7 +47,7 @@ fun EntryScreen(vm: MainViewModel, nav: NavController) {
             if (loaded) {
                 val dest = if (vm.isApproved == true) Screen.Main.route else Screen.Pending.route
                 nav.navigate(dest) {
-                    popUpTo(Screen.RoleSelection.route) { inclusive = false }
+                    popUpTo(0) { inclusive = true }
                 }
             }
         }

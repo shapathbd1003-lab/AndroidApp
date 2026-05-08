@@ -146,7 +146,7 @@ fun LoginScreen(vm: MainViewModel, nav: NavController) {
                                 vm.loginAsync(email.trim(), password) {
                                     val dest = if (vm.isApproved == true) Screen.Main.route else Screen.Pending.route
                                     nav.navigate(dest) {
-                                        popUpTo(Screen.Entry.route) { inclusive = true }
+                                        popUpTo(0) { inclusive = true }
                                     }
                                 }
                             },

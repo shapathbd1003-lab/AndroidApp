@@ -38,6 +38,9 @@ object FakeRepository {
     // Intermediate maps to merge both listeners
     private val pendingJobs = mutableMapOf<String, Job>()
     private val myJobs      = mutableMapOf<String, Job>()
+    // Jobs accepted locally but not yet confirmed by Firestore — prevents them
+    // disappearing if myJobsListener fires before the Firestore update propagates.
+    private val locallyAccepted = mutableMapOf<String, Job>()
 
     // Service type IDs — used by RegisterScreen chips
     val serviceTypes get() = ServiceData.categories.map { it.id }
@@ -165,8 +168,15 @@ object FakeRepository {
         myJobsListener = db.collection("requests")
             .whereEqualTo("providerId", uid)
             .addSnapshotListener { snaps, _ ->
+                // Clear, but remember which IDs Firestore is now tracking
                 myJobs.clear()
+                val firestoreIds = mutableSetOf<String>()
+
                 snaps?.documents?.forEach { doc ->
+                    firestoreIds.add(doc.id)
+                    // Firestore confirmed this job — no longer needs local tracking
+                    locallyAccepted.remove(doc.id)
+
                     fun makeJob(fsStatus: String) = Job(
                         id          = doc.id,
                         description = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
@@ -180,15 +190,11 @@ object FakeRepository {
                     )
 
                     when (val status = doc.getString("status") ?: return@forEach) {
-                        // Waiting for client confirmation
                         "awaiting_approval" -> myJobs[doc.id] = makeJob("awaiting")
-                        // Client confirmed — go to location
                         "accepted"          -> myJobs[doc.id] = makeJob("agreed")
-                        // Status chain: on_the_way → arrived → working
                         "on_the_way"        -> myJobs[doc.id] = makeJob("on_the_way")
                         "arrived"           -> myJobs[doc.id] = makeJob("arrived")
                         "working"           -> myJobs[doc.id] = makeJob("working")
-                        // "completed" status is never set by this app (kept for safety)
                         "completed", "finished" -> {
                             val prov = provider
                             if (prov != null && prov.history.none { it.id == doc.id }) {
@@ -208,14 +214,16 @@ object FakeRepository {
                                     }
                                 }
                             }
-                            // Finished jobs do not appear in the active list
                         }
-                        // Cancelled variants — remove from list
-                        "cancelled", "cancelled_by_client", "cancelled_by_provider" -> {
-                            myJobs.remove(doc.id)
-                        }
+                        "cancelled", "cancelled_by_client", "cancelled_by_provider" -> { /* not shown */ }
                     }
                 }
+
+                // Re-add jobs accepted locally but not yet visible in Firestore.
+                // This prevents the "insufficient points / accept button" flash that
+                // occurs when this listener fires before the accept() Firestore update
+                // has propagated (the job would otherwise fall back to pendingJobs).
+                locallyAccepted.forEach { (id, job) -> myJobs[id] = job }
                 rebuildJobList()
             }
     }
@@ -225,8 +233,9 @@ object FakeRepository {
         // "pending" card appearing when the pendingListener fires before the Firestore
         // status update propagates after accept().
         val merged = mutableMapOf<String, Job>()
-        myJobs.forEach   { (id, job) -> merged[id] = job }
-        pendingJobs.forEach { (id, job) -> if (id !in merged) merged[id] = job }
+        myJobs.forEach { (id, job) -> merged[id] = job }
+        // Skip pending entries that are locally-accepted or already in myJobs
+        pendingJobs.forEach { (id, job) -> if (id !in merged && id !in locallyAccepted) merged[id] = job }
         val sorted = merged.values.sortedWith(compareBy(
             { when (it.status) { "agreed" -> 0; "arrived" -> 1; "working" -> 1; "on_the_way" -> 2; "awaiting" -> 3; else -> 4 } },
             { if (it.distanceKm >= 0) it.distanceKm else Double.MAX_VALUE }
@@ -267,9 +276,13 @@ object FakeRepository {
         p.points -= 400
         pointsState = p.points
 
-        // Optimistic: move from pending to awaiting in local list immediately
+        // Optimistic: move from pending to awaiting in local list immediately.
+        // Also record in locallyAccepted so the job survives a myJobsListener
+        // clear that fires before Firestore propagates the accept update.
+        val awaitingJob = job.copy(status = "awaiting")
+        locallyAccepted[job.id] = awaitingJob
         pendingJobs.remove(job.id)
-        myJobs[job.id] = job.copy(status = "awaiting")
+        myJobs[job.id] = awaitingJob
         rebuildJobList()
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -352,7 +365,7 @@ object FakeRepository {
         pendingListener?.remove();  pendingListener  = null
         myJobsListener?.remove();   myJobsListener   = null
         requestsListener?.remove(); requestsListener = null
-        pendingJobs.clear(); myJobs.clear()
+        pendingJobs.clear(); myJobs.clear(); locallyAccepted.clear()
         loggedIn  = false
         provider  = null
         jobs.clear()

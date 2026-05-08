@@ -94,7 +94,7 @@ fun ClientLoginScreen(vm: ClientViewModel, nav: NavController) {
                     onClick = {
                         vm.loginAsync(email.trim(), password) {
                             nav.navigate(Screen.ClientDashboard.route) {
-                                popUpTo(Screen.ClientEntry.route) { inclusive = true }
+                                popUpTo(0) { inclusive = true }
                             }
                         }
                     },

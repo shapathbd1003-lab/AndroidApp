@@ -229,7 +229,7 @@ fun ClientRegisterScreen(vm: ClientViewModel, nav: NavController) {
                                                else "${selectedAvatar.first}:${selectedAvatar.second}"
                                 vm.registerAsync(name.trim(), phone.trim(), email.trim(), password, avatarStr) {
                                     nav.navigate(Screen.ClientDashboard.route) {
-                                        popUpTo(Screen.ClientEntry.route) { inclusive = true }
+                                        popUpTo(0) { inclusive = true }
                                     }
                                 }
                             }

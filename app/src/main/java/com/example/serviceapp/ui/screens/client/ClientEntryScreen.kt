@@ -32,7 +32,7 @@ fun ClientEntryScreen(vm: ClientViewModel, nav: NavController) {
     LaunchedEffect(Unit) {
         vm.loadCurrentSession { loaded ->
             if (loaded) nav.navigate(Screen.ClientDashboard.route) {
-                popUpTo(Screen.ClientEntry.route) { inclusive = true }
+                popUpTo(0) { inclusive = true }
             }
         }
     }
@@ -96,7 +96,7 @@ fun ClientEntryScreen(vm: ClientViewModel, nav: NavController) {
                             OutlinedButton(
                                 onClick = {
                                     vm.loginAsync(TEST_CLIENT_EMAIL, TEST_CLIENT_PASSWORD) {
-                                        nav.navigate(Screen.ClientDashboard.route) { popUpTo(Screen.ClientEntry.route) { inclusive = true } }
+                                        nav.navigate(Screen.ClientDashboard.route) { popUpTo(0) { inclusive = true } }
                                     }
                                 },
                                 modifier = Modifier.weight(1f).height(36.dp),
@@ -107,7 +107,7 @@ fun ClientEntryScreen(vm: ClientViewModel, nav: NavController) {
                             OutlinedButton(
                                 onClick = {
                                     vm.registerAsync(TEST_CLIENT_NAME, TEST_CLIENT_PHONE, TEST_CLIENT_EMAIL, TEST_CLIENT_PASSWORD) {
-                                        nav.navigate(Screen.ClientDashboard.route) { popUpTo(Screen.ClientEntry.route) { inclusive = true } }
+                                        nav.navigate(Screen.ClientDashboard.route) { popUpTo(0) { inclusive = true } }
                                     }
                                 },
                                 modifier = Modifier.weight(1f).height(36.dp),
