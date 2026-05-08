@@ -1,5 +1,6 @@
 package com.example.serviceapp.data.repository
 
+import android.location.Location
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -9,8 +10,8 @@ import com.example.serviceapp.data.model.Provider
 import com.example.serviceapp.data.model.ServiceHistory
 import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.utils.ServiceData
-import android.location.Location
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -18,31 +19,28 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import java.util.UUID
 
 object FakeRepository {
 
-    var provider   by mutableStateOf<Provider?>(null)
-    val jobs        = mutableStateListOf<Job>()
-    var loggedIn   by mutableStateOf(false)
-    // Separate reactive state for points so UI recomposes when changed
+    var provider    by mutableStateOf<Provider?>(null)
+    val jobs         = mutableStateListOf<Job>()
+    var loggedIn    by mutableStateOf(false)
     var pointsState by mutableStateOf(500)
 
     private val auth: FirebaseAuth      get() = FirebaseAuth.getInstance()
     private val db:   FirebaseFirestore get() = FirebaseFirestore.getInstance()
-    private var pendingListener:  ListenerRegistration? = null  // all pending jobs for this service
-    private var myJobsListener:   ListenerRegistration? = null  // provider's own in-progress jobs
-    private var requestsListener: ListenerRegistration? = null  // kept for compat
+
+    private var pendingListener:  ListenerRegistration? = null
+    private var myJobsListener:   ListenerRegistration? = null
     private var approvalListener: ListenerRegistration? = null
 
-    // Intermediate maps to merge both listeners
+    // Firestore is the single source of truth.
+    // The Firestore SDK fires listeners immediately from its local write cache,
+    // so all status transitions just write to Firestore and let the listeners
+    // rebuild the list. No optimistic updates, no local state to go stale.
     private val pendingJobs = mutableMapOf<String, Job>()
     private val myJobs      = mutableMapOf<String, Job>()
-    // Jobs accepted locally but not yet confirmed by Firestore — prevents them
-    // disappearing if myJobsListener fires before the Firestore update propagates.
-    private val locallyAccepted = mutableMapOf<String, Job>()
 
-    // Service type IDs — used by RegisterScreen chips
     val serviceTypes get() = ServiceData.categories.map { it.id }
 
     // ── Register ─────────────────────────────────────────────────────────────
@@ -77,8 +75,7 @@ object FakeRepository {
             email = email.trim(), photo = photo,
             nid = nid.trim(), baseFee = baseFee,
             serviceType = serviceType, certificate = certificate,
-            skillLevel = skillLevel,
-            isApproved = null
+            skillLevel = skillLevel, isApproved = null
         )
         loggedIn = true
     }
@@ -92,7 +89,7 @@ object FakeRepository {
         if (provider?.isApproved == true) startListeningToRequests()
     }
 
-    // ── Auto-restore session ──────────────────────────────────────────────────
+    // ── Session restore ───────────────────────────────────────────────────────
     suspend fun loadCurrentUser(): Boolean {
         val uid = auth.currentUser?.uid ?: return false
         return runCatching {
@@ -123,8 +120,6 @@ object FakeRepository {
             isApproved   = if (approvedRaw == null) null else approvedRaw as? Boolean
         )
         pointsState = provider?.points ?: 500
-
-        // If provider doesn't have points stored yet, save 500
         if (doc.getLong("points") == null) {
             CoroutineScope(Dispatchers.IO).launch {
                 runCatching { db.collection("providers").document(uid).update(mapOf("points" to 500)).await() }
@@ -138,7 +133,7 @@ object FakeRepository {
         val uid = auth.currentUser?.uid ?: return
         val allowed = ServiceData.allowedTypes(p.skillLevel)
 
-        // Listener 1: all PENDING jobs for this service type (to accept)
+        // Listener 1: all pending jobs for this service type
         pendingListener?.remove()
         pendingListener = db.collection("requests")
             .whereEqualTo("serviceType", p.serviceType)
@@ -148,128 +143,81 @@ object FakeRepository {
                 snaps?.documents?.forEach { doc ->
                     val problemType = doc.getString("problemType") ?: "normal"
                     if (problemType !in allowed) return@forEach
-                    pendingJobs[doc.id] = Job(
-                        id          = doc.id,
-                        description = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
-                        address     = doc.getString("address")     ?: "",
-                        phone       = doc.getString("clientPhone") ?: "",
-                        overview    = doc.getString("description") ?: "",
-                        problemType = problemType,
-                        status      = "pending",
-                        lat         = doc.getDouble("lat") ?: 0.0,
-                        lng         = doc.getDouble("lng") ?: 0.0
-                    )
+                    pendingJobs[doc.id] = docToJob(doc, "pending")
                 }
                 rebuildJobList()
             }
 
-        // Listener 2: provider's own jobs (awaiting client / accepted / completed)
+        // Listener 2: all jobs the provider owns (any status)
         myJobsListener?.remove()
         myJobsListener = db.collection("requests")
             .whereEqualTo("providerId", uid)
             .addSnapshotListener { snaps, _ ->
-                val firestoreIds = mutableSetOf<String>()
-
+                myJobs.clear()
                 snaps?.documents?.forEach { doc ->
-                    firestoreIds.add(doc.id)
-                    locallyAccepted.remove(doc.id)
-
-                    fun makeJob(fsStatus: String) = Job(
-                        id          = doc.id,
-                        description = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
-                        address     = doc.getString("address")     ?: "",
-                        phone       = doc.getString("clientPhone") ?: "",
-                        overview    = doc.getString("description") ?: "",
-                        problemType = doc.getString("problemType") ?: "normal",
-                        status      = fsStatus,
-                        lat         = doc.getDouble("lat") ?: 0.0,
-                        lng         = doc.getDouble("lng") ?: 0.0
-                    )
-
                     when (val status = doc.getString("status") ?: return@forEach) {
-                        "awaiting_approval", "accepted", "on_the_way", "arrived", "working" -> {
-                            val fsLocal = when (status) {
-                                "awaiting_approval" -> "awaiting"
-                                "accepted"          -> "agreed"
-                                else                -> status
-                            }
-                            // Never let Firestore roll back to an earlier status.
-                            // If our local myJobs already has a higher-priority status
-                            // (e.g. provider pressed "On the way" but Firestore hasn't
-                            // echoed "on_the_way" back yet), keep the local state.
-                            val currentPriority = jobStatusPriority(myJobs[doc.id]?.status)
-                            val newPriority      = jobStatusPriority(fsLocal)
-                            if (newPriority >= currentPriority) {
-                                myJobs[doc.id] = makeJob(fsLocal)
-                            }
-                            // else: local is ahead — leave myJobs[doc.id] untouched
-                        }
-                        "completed", "finished" -> {
-                            myJobs.remove(doc.id)
-                            val prov = provider
-                            if (prov != null && prov.history.none { it.id == doc.id }) {
-                                val desc         = AppStrings.serviceTypeName(doc.getString("serviceType") ?: "")
-                                val fee          = doc.getDouble("agreedPrice")?.takeIf { it > 0 } ?: prov.baseFee
-                                val clientName   = doc.getString("clientName")      ?: ""
-                                val clientRating = (doc.getLong("rating") ?: 0).toInt()
-                                prov.advance += fee
-                                prov.history.add(ServiceHistory(doc.id, desc, fee, clientName, clientRating))
-                                val uid2 = auth.currentUser?.uid
-                                if (uid2 != null) {
-                                    CoroutineScope(Dispatchers.IO).launch {
-                                        runCatching {
-                                            db.collection("providers").document(uid2)
-                                                .update(mapOf("advance" to prov.advance)).await()
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        "cancelled", "cancelled_by_client", "cancelled_by_provider" -> {
-                            myJobs.remove(doc.id)
-                        }
+                        "awaiting_approval" -> myJobs[doc.id] = docToJob(doc, "awaiting")
+                        "accepted"          -> myJobs[doc.id] = docToJob(doc, "agreed")
+                        "on_the_way"        -> myJobs[doc.id] = docToJob(doc, "on_the_way")
+                        "arrived"           -> myJobs[doc.id] = docToJob(doc, "arrived")
+                        "working"           -> myJobs[doc.id] = docToJob(doc, "working")
+                        "finished", "completed" -> addToHistory(doc)
+                        // cancelled variants: omit from active list
                     }
                 }
-
-                // Remove jobs no longer in Firestore (deleted / moved out of query)
-                myJobs.keys.toList().forEach { id ->
-                    if (id !in firestoreIds && id !in locallyAccepted) myJobs.remove(id)
-                }
-
-                // Restore locally-accepted jobs not yet confirmed by Firestore
-                locallyAccepted.forEach { (id, job) -> myJobs[id] = job }
                 rebuildJobList()
             }
     }
 
-    // Returns a numeric priority so we can refuse Firestore rollbacks.
-    // Terminal states (cancelled/finished) are handled separately and never stored in myJobs.
-    private fun jobStatusPriority(localStatus: String?) = when (localStatus) {
-        "awaiting"   -> 1
-        "agreed"     -> 2
-        "on_the_way" -> 3
-        "arrived"    -> 4
-        "working"    -> 5
-        else         -> 0
+    private fun docToJob(doc: DocumentSnapshot, localStatus: String) = Job(
+        id          = doc.id,
+        description = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
+        address     = doc.getString("address")     ?: "",
+        phone       = doc.getString("clientPhone") ?: "",
+        overview    = doc.getString("description") ?: "",
+        problemType = doc.getString("problemType") ?: "normal",
+        status      = localStatus,
+        lat         = doc.getDouble("lat") ?: 0.0,
+        lng         = doc.getDouble("lng") ?: 0.0
+    )
+
+    private fun addToHistory(doc: DocumentSnapshot) {
+        val prov = provider ?: return
+        if (prov.history.any { it.id == doc.id }) return
+        val desc         = AppStrings.serviceTypeName(doc.getString("serviceType") ?: "")
+        val fee          = doc.getDouble("agreedPrice")?.takeIf { it > 0 } ?: prov.baseFee
+        val clientName   = doc.getString("clientName")  ?: ""
+        val clientRating = (doc.getLong("rating") ?: 0).toInt()
+        prov.advance += fee
+        prov.history.add(ServiceHistory(doc.id, desc, fee, clientName, clientRating))
+        val uid = auth.currentUser?.uid ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            runCatching {
+                db.collection("providers").document(uid)
+                    .update(mapOf("advance" to prov.advance)).await()
+            }
+        }
     }
 
     private fun rebuildJobList() {
-        // myJobs always wins over pendingJobs for the same ID — prevents a duplicate
-        // "pending" card appearing when the pendingListener fires before the Firestore
-        // status update propagates after accept().
-        val merged = mutableMapOf<String, Job>()
-        myJobs.forEach { (id, job) -> merged[id] = job }
-        // Skip pending entries that are locally-accepted or already in myJobs
-        pendingJobs.forEach { (id, job) -> if (id !in merged && id !in locallyAccepted) merged[id] = job }
+        // myJobs always wins: a job the provider owns never shows as a new pending job
+        val merged = myJobs + pendingJobs.filterKeys { it !in myJobs }
         val sorted = merged.values.sortedWith(compareBy(
-            { when (it.status) { "agreed" -> 0; "arrived" -> 1; "working" -> 1; "on_the_way" -> 2; "awaiting" -> 3; else -> 4 } },
+            { when (it.status) {
+                "agreed"     -> 0
+                "arrived"    -> 1
+                "working"    -> 1
+                "on_the_way" -> 2
+                "awaiting"   -> 3
+                else         -> 4
+            }},
             { if (it.distanceKm >= 0) it.distanceKm else Double.MAX_VALUE }
         ))
         jobs.clear()
         jobs.addAll(sorted)
     }
 
-    // ── Approval listener — auto fires when admin approves/rejects ────────────
+    // ── Approval listener ─────────────────────────────────────────────────────
     fun listenForApproval(
         onApproved: () -> Unit,
         onRejected: () -> Unit
@@ -278,37 +226,20 @@ object FakeRepository {
         return db.collection("providers").document(uid).addSnapshotListener { snap, _ ->
             val raw = snap?.get("isApproved")
             when {
-                raw == true  -> {
-                    provider?.isApproved = true
-                    startListeningToRequests()
-                    onApproved()
-                }
+                raw == true  -> { provider?.isApproved = true;  startListeningToRequests(); onApproved() }
                 raw == false -> { provider?.isApproved = false; onRejected() }
             }
         }
     }
 
-    // ── Accept a real client request ──────────────────────────────────────────
-    // Returns false if insufficient points
+    // ── Job actions — just write to Firestore, listeners update the UI ────────
     fun accept(job: Job): Boolean {
         val p   = provider ?: return false
         val uid = auth.currentUser?.uid ?: return false
-
-        // Points check — need 400 to accept a job
         if (p.points < 400) return false
 
-        // Deduct 400 points immediately + sync reactive state
         p.points -= 400
         pointsState = p.points
-
-        // Optimistic: move from pending to awaiting in local list immediately.
-        // Also record in locallyAccepted so the job survives a myJobsListener
-        // clear that fires before Firestore propagates the accept update.
-        val awaitingJob = job.copy(status = "awaiting")
-        locallyAccepted[job.id] = awaitingJob
-        pendingJobs.remove(job.id)
-        myJobs[job.id] = awaitingJob
-        rebuildJobList()
 
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
@@ -321,46 +252,18 @@ object FakeRepository {
                     "providerBaseFee" to p.baseFee,
                     "acceptedAt"      to FieldValue.serverTimestamp()
                 )).await()
-                // Persist deducted points
-                db.collection("providers").document(uid).update(mapOf("points" to p.points)).await()
+                db.collection("providers").document(uid)
+                    .update(mapOf("points" to p.points)).await()
             }
         }
         return true
     }
 
-    // ── Status transitions ────────────────────────────────────────────────────
-    private fun updateJobStatus(jobId: String, localStatus: String, fsStatus: String, timeField: String) {
-        val idx = jobs.indexOfFirst { it.id == jobId }
-        if (idx >= 0) {
-            val updated = jobs[idx].copy(status = localStatus)
-            jobs[idx] = updated
-            // Keep myJobs in sync so rebuildJobList() never uses a stale status.
-            // Without this, any listener fire (e.g. pendingListener getting a new job)
-            // would call rebuildJobList() which rebuilds jobs from myJobs and revert
-            // the status to whatever myJobsListener last wrote — potentially several
-            // steps behind, leading to the Accept button reappearing.
-            myJobs[jobId] = updated
-        }
-        CoroutineScope(Dispatchers.IO).launch {
-            runCatching {
-                db.collection("requests").document(jobId).update(mapOf(
-                    "status"    to fsStatus,
-                    timeField   to FieldValue.serverTimestamp()
-                )).await()
-            }
-        }
-    }
+    fun markOnTheWay(jobId: String) = writeStatus(jobId, "on_the_way", "onTheWayAt")
+    fun markArrived(jobId: String)  = writeStatus(jobId, "arrived",    "arrivedAt")
+    fun markWorking(jobId: String)  = writeStatus(jobId, "working",    "workingAt")
 
-    fun markOnTheWay(jobId: String) = updateJobStatus(jobId, "on_the_way", "on_the_way", "onTheWayAt")
-    fun markArrived(jobId: String)  = updateJobStatus(jobId, "arrived",    "arrived",    "arrivedAt")
-    fun markWorking(jobId: String)  = updateJobStatus(jobId, "working",    "working",    "workingAt")
     fun markFinished(jobId: String) {
-        // Remove from active list immediately so provider sees it disappear right away.
-        // History is added by the Firestore listener, which uses the correct agreedPrice
-        // (markFinished would only have access to baseFee, which may differ).
-        myJobs.remove(jobId)
-        pendingJobs.remove(jobId)
-        rebuildJobList()
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
                 db.collection("requests").document(jobId).update(mapOf(
@@ -371,16 +274,26 @@ object FakeRepository {
         }
     }
 
-    // ── Set custom agreed price ───────────────────────────────────────────────
-    fun setAgreedPrice(jobId: String, price: Double) {
+    private fun writeStatus(jobId: String, fsStatus: String, timeField: String) {
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
-                db.collection("requests").document(jobId).update(mapOf("agreedPrice" to price)).await()
+                db.collection("requests").document(jobId).update(mapOf(
+                    "status"  to fsStatus,
+                    timeField to FieldValue.serverTimestamp()
+                )).await()
             }
         }
     }
 
-    // ── Add points (called by admin) ──────────────────────────────────────────
+    fun setAgreedPrice(jobId: String, price: Double) {
+        CoroutineScope(Dispatchers.IO).launch {
+            runCatching {
+                db.collection("requests").document(jobId)
+                    .update(mapOf("agreedPrice" to price)).await()
+            }
+        }
+    }
+
     fun addPoints(amount: Int) {
         val p   = provider ?: return
         val uid = auth.currentUser?.uid ?: return
@@ -388,26 +301,14 @@ object FakeRepository {
         pointsState = p.points
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
-                db.collection("providers").document(uid).update(mapOf("points" to p.points)).await()
+                db.collection("providers").document(uid)
+                    .update(mapOf("points" to p.points)).await()
             }
         }
     }
 
-    // ── Logout ────────────────────────────────────────────────────────────────
-    fun logout() {
-        auth.signOut()
-        pendingListener?.remove();  pendingListener  = null
-        myJobsListener?.remove();   myJobsListener   = null
-        requestsListener?.remove(); requestsListener = null
-        pendingJobs.clear(); myJobs.clear(); locallyAccepted.clear()
-        loggedIn  = false
-        provider  = null
-        jobs.clear()
-    }
-
     fun setAvailability(status: String) { provider?.availability = status }
 
-    // Sort jobs by distance from provider's current location (closest first)
     fun sortByLocation(providerLat: Double, providerLng: Double) {
         if (providerLat == 0.0 && providerLng == 0.0) return
         val results = FloatArray(1)
@@ -426,5 +327,17 @@ object FakeRepository {
             p.history.clear()
             p.advance = 0.0
         }
+    }
+
+    fun logout() {
+        auth.signOut()
+        pendingListener?.remove();  pendingListener  = null
+        myJobsListener?.remove();   myJobsListener   = null
+        approvalListener?.remove(); approvalListener = null
+        pendingJobs.clear()
+        myJobs.clear()
+        loggedIn = false
+        provider = null
+        jobs.clear()
     }
 }
