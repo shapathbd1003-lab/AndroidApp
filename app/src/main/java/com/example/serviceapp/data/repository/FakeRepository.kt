@@ -133,11 +133,22 @@ object FakeRepository {
         val uid = auth.currentUser?.uid ?: return
         val allowed = ServiceData.allowedTypes(p.skillLevel)
 
+        android.util.Log.d("JobFlow", "startListeningToRequests uid=$uid serviceType=${p.serviceType}")
+
         requestsListener?.remove()
         requestsListener = db.collection("requests")
             .whereEqualTo("serviceType", p.serviceType)
             .addSnapshotListener { snaps, err ->
-                if (err != null || snaps == null) return@addSnapshotListener
+                if (err != null) {
+                    android.util.Log.e("JobFlow", "Listener error: ${err.message}")
+                    return@addSnapshotListener
+                }
+                if (snaps == null) {
+                    android.util.Log.w("JobFlow", "Snapshot is null")
+                    return@addSnapshotListener
+                }
+
+                android.util.Log.d("JobFlow", "=== Snapshot fired: ${snaps.documents.size} doc(s), fromCache=${snaps.metadata.isFromCache} ===")
 
                 val newJobs = mutableMapOf<String, Job>()
 
@@ -146,28 +157,43 @@ object FakeRepository {
                     val docProviderId = doc.getString("providerId") ?: ""
                     val problemType   = doc.getString("problemType") ?: "normal"
 
+                    android.util.Log.d("JobFlow",
+                        "  doc=${doc.id.takeLast(6)} " +
+                        "status=$status " +
+                        "providerId=${docProviderId.takeLast(6).ifEmpty { "(empty)" }} " +
+                        "myUid=${uid.takeLast(6)} " +
+                        "fromCache=${doc.metadata.isFromCache}"
+                    )
+
                     when {
-                        // Unassigned pending job: no provider has accepted it yet
-                        // docProviderId.isEmpty() guards against stale cache showing
-                        // an already-accepted job as "pending"
                         status == "pending" && docProviderId.isEmpty() && problemType in allowed -> {
+                            android.util.Log.d("JobFlow", "    → PENDING (available to accept)")
                             newJobs[doc.id] = docToJob(doc, "pending")
                         }
-                        // This provider's own job — any non-pending status
                         docProviderId == uid -> {
-                            when (status) {
-                                "awaiting_approval" -> newJobs[doc.id] = docToJob(doc, "awaiting")
-                                "accepted"          -> newJobs[doc.id] = docToJob(doc, "agreed")
-                                "on_the_way"        -> newJobs[doc.id] = docToJob(doc, "on_the_way")
-                                "arrived"           -> newJobs[doc.id] = docToJob(doc, "arrived")
-                                "working"           -> newJobs[doc.id] = docToJob(doc, "working")
-                                "finished", "completed" -> addToHistory(doc)
-                                // cancelled / other terminal → don't show in active list
+                            val localStatus = when (status) {
+                                "awaiting_approval" -> "awaiting"
+                                "accepted"          -> "agreed"
+                                "on_the_way"        -> "on_the_way"
+                                "arrived"           -> "arrived"
+                                "working"           -> "working"
+                                "finished", "completed" -> { addToHistory(doc); null }
+                                else -> null
+                            }
+                            if (localStatus != null) {
+                                android.util.Log.d("JobFlow", "    → OWN JOB localStatus=$localStatus")
+                                newJobs[doc.id] = docToJob(doc, localStatus)
+                            } else {
+                                android.util.Log.d("JobFlow", "    → OWN JOB terminal/cancelled, not shown")
                             }
                         }
-                        // Someone else's in-progress job — not relevant, skip
+                        else -> {
+                            android.util.Log.d("JobFlow", "    → SKIPPED (other provider's job)")
+                        }
                     }
                 }
+
+                android.util.Log.d("JobFlow", "Final jobs list: ${newJobs.values.map { "${it.id.takeLast(6)}=${it.status}" }}")
 
                 val sorted = newJobs.values.sortedWith(compareBy(
                     { when (it.status) {
