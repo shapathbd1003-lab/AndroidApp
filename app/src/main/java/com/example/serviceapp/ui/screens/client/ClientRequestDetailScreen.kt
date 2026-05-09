@@ -182,15 +182,7 @@ private fun InfoCard(req: ServiceRequest) {
             HorizontalDivider()
             InfoRow("🔧 ${AppStrings.serviceTypeLabel}", AppStrings.serviceTypeName(req.serviceType))
             InfoRow("📝 ${AppStrings.problemDescLabel}", req.description)
-            // Address row with inline map button
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-                Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("📍 ${AppStrings.addressLabel}", fontSize = 13.sp, color = Color(0xFF757575), modifier = Modifier.widthIn(min = 90.dp))
-                    Text(req.address, fontSize = 13.sp, color = Color(0xFF212121), fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
-                }
-                Spacer(Modifier.width(8.dp))
-                OpenMapsButton(address = req.address, color = Color(0xFF6A1B9A), compact = true)
-            }
+            InfoRow("📍 ${AppStrings.addressLabel}", req.address)
         }
     }
 }

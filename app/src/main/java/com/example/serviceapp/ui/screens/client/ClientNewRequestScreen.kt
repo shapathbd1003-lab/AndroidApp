@@ -274,17 +274,19 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                                     )
                                 }
                             }
-                            // "Add more" custom note field
-                            if (selectedProblems.isNotEmpty()) {
+                            // "Other" custom note — only visible when the Other chip is selected
+                            val otherLabel = if (isBn) "অন্যান্য" else "Other"
+                            if (selectedProblems.contains(otherLabel)) {
                                 Spacer(Modifier.height(10.dp))
                                 OutlinedTextField(
                                     value = customNote,
                                     onValueChange = { customNote = it },
-                                    placeholder = { Text(if (isBn) "+ আরও কিছু যোগ করুন (ঐচ্ছিক)" else "+ Add more details (optional)", color = Color(0xFFBDBDBD)) },
+                                    placeholder = { Text(if (isBn) "অন্যান্য সমস্যা লিখুন..." else "Describe the other issue...", color = Color(0xFFBDBDBD)) },
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(10.dp),
                                     colors = fieldColors,
-                                    singleLine = true
+                                    singleLine = false,
+                                    maxLines = 3
                                 )
                             }
                         }

@@ -318,4 +318,10 @@ object AppStrings {
     // ── Job finish flow ──────────────────────────────────────────────────────
     val waitingClientFinish get() = if (isBn) "⏳ গ্রাহকের নিশ্চিতকরণের অপেক্ষায়..." else "⏳ Waiting for client to confirm..."
     val finishJobBtn        get() = if (isBn) "✅ কাজ সম্পন্ন হয়েছে" else "✅ Job is Done"
+
+    // ── Provider rates client ────────────────────────────────────────────────
+    val rateClientTitle  get() = if (isBn) "গ্রাহককে রেট করুন" else "Rate the Client"
+    val clientBehavior   get() = if (isBn) "গ্রাহকের আচরণ" else "Client Behavior"
+    val saveRatingBtn    get() = if (isBn) "রেটিং সংরক্ষণ করুন" else "Save Rating"
+    val ratedClient      get() = if (isBn) "আপনার দেওয়া রেটিং" else "Your Rating"
 }
