@@ -134,13 +134,8 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                 }
             }
 
-            // Map for navigation when going to client
-            if (job.status in listOf("agreed", "on_the_way", "arrived", "working")) {
-                OpenMapsButton(address = job.address, color = AppColors.Primary)
-            }
-
-            // Price card
-            if (job.status in listOf("agreed", "on_the_way", "arrived")) {
+            // Price card — only before client confirms (agreed state); hidden once provider is on the way
+            if (job.status == "agreed") {
                 Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = AppColors.PrimaryContainer)) {
                     Row(Modifier.fillMaxWidth().padding(14.dp),

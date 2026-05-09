@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -75,6 +76,8 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
 
     val reviews             = remember { mutableStateListOf<ReviewItem>() }
     var showDeleteConfirm  by remember { mutableStateOf(false) }
+    // Track provider's ratings for each client (jobId → stars) for reactive UI
+    val clientRatings       = remember { androidx.compose.runtime.mutableStateMapOf<String, Int>() }
     LaunchedEffect(p.id) {
         FirebaseFirestore.getInstance()
             .collection("reviews")
@@ -346,7 +349,8 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                         colors = CardDefaults.cardColors(containerColor = AppColors.Surface),
                         elevation = CardDefaults.cardElevation(2.dp)
                     ) {
-                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            // Service + earnings row
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -364,6 +368,7 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                                 }
                                 Text("৳ ${h.earning.toInt()}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = AppColors.Success)
                             }
+                            // Client name + client's rating of provider
                             if (h.clientName.isNotBlank() || h.clientRating > 0) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(start = 48.dp),
@@ -373,6 +378,41 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                                         Text("${AppStrings.clientLabel}: ${h.clientName}", fontSize = 12.sp, color = AppColors.TextSecondary)
                                     if (h.clientRating > 0)
                                         Text("${"⭐".repeat(h.clientRating)}", fontSize = 12.sp)
+                                }
+                            }
+                            // Provider rates client
+                            val savedRating  = h.providerRatingForClient
+                            val pickedRating = clientRatings[h.id] ?: savedRating
+                            if (h.clientName.isNotBlank()) {
+                                Column(modifier = Modifier.padding(start = 48.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    Text(
+                                        if (pickedRating > 0) AppStrings.ratedClient else AppStrings.rateClientTitle,
+                                        fontSize = 12.sp,
+                                        color = if (pickedRating > 0) AppColors.TextSecondary else AppColors.Primary,
+                                        fontWeight = if (pickedRating > 0) FontWeight.Normal else FontWeight.SemiBold
+                                    )
+                                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        (1..5).forEach { star ->
+                                            val filled = star <= pickedRating
+                                            androidx.compose.material3.IconButton(
+                                                onClick = {
+                                                    if (savedRating == 0) { // allow rating only once
+                                                        clientRatings[h.id] = star
+                                                        h.providerRatingForClient = star
+                                                        FirebaseFirestore.getInstance()
+                                                            .collection("requests").document(h.id)
+                                                            .update("providerRatingForClient", star)
+                                                    }
+                                                },
+                                                modifier = Modifier.size(32.dp),
+                                                enabled = savedRating == 0
+                                            ) {
+                                                Icon(Icons.Default.Star, null,
+                                                    tint = if (filled) Color(0xFFFFA000) else Color(0xFFBDBDBD),
+                                                    modifier = Modifier.size(22.dp))
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
