@@ -165,56 +165,54 @@ fun JobCard(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (!isDone && !isAwaiting && !isAgreed && !isOnTheWay) {
-                    if (!hasPoints) {
-                        // Insufficient points warning
-                        Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFFFEBEE)) {
-                            Text(AppStrings.insufficientPoints, fontSize = 12.sp, color = Color(0xFFC62828),
-                                fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
-                        }
-                    } else {
-                        Button(
-                            onClick = { onAccept() },
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
-                        ) {
-                            Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text(AppStrings.accept, fontSize = 13.sp)
+                when {
+                    // Pending: show Accept button (or insufficient points warning)
+                    job.status == "pending" -> {
+                        if (!hasPoints) {
+                            Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFFFEBEE)) {
+                                Text(AppStrings.insufficientPoints, fontSize = 12.sp, color = Color(0xFFC62828),
+                                    fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+                            }
+                        } else {
+                            Button(
+                                onClick = { onAccept() },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
+                            ) {
+                                Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(AppStrings.accept, fontSize = 13.sp)
+                            }
                         }
                     }
-                } else if (isAgreed && onMarkOnTheWay != null) {
-                    Button(onClick = { onMarkOnTheWay() }, shape = RoundedCornerShape(10.dp),
+                    isAwaiting -> Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFFFF8E1)) {
+                        Text(AppStrings.awaitingClientApproval, fontSize = 12.sp, color = Color(0xFFE65100),
+                            fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+                    }
+                    isAgreed && onMarkOnTheWay != null -> Button(
+                        onClick = { onMarkOnTheWay() }, shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)) {
                         Text(AppStrings.markOnTheWay, fontSize = 13.sp)
                     }
-                } else if (isOnTheWay && onMarkArrived != null) {
-                    Button(onClick = { onMarkArrived() }, shape = RoundedCornerShape(10.dp),
+                    isOnTheWay && onMarkArrived != null -> Button(
+                        onClick = { onMarkArrived() }, shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))) {
                         Text(AppStrings.markArrived, fontSize = 13.sp)
                     }
-                } else if (isArrived && onMarkWorking != null) {
-                    Button(onClick = { onMarkWorking() }, shape = RoundedCornerShape(10.dp),
+                    isArrived && onMarkWorking != null -> Button(
+                        onClick = { onMarkWorking() }, shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100))) {
                         Text(AppStrings.markWorking, fontSize = 13.sp)
                     }
-                } else if (isWorking && onMarkFinished != null) {
-                    Button(onClick = { onMarkFinished() }, shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))) {
-                        Text(AppStrings.markFinished, fontSize = 13.sp)
+                    isWorking -> Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFFFF8E1)) {
+                        Text(AppStrings.waitingClientFinish, fontSize = 12.sp, color = Color(0xFFE65100),
+                            fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
                     }
-                } else if (isDone) {
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = Color(0xFFE8F5E9)
-                    ) {
-                        Row(
-                            Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                    isDone -> Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFE8F5E9)) {
+                        Row(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Check, null, tint = AppColors.Success, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text(AppStrings.accepted, fontSize = 13.sp, color = AppColors.Success, fontWeight = FontWeight.SemiBold)
+                            Text(AppStrings.finishedStatus, fontSize = 13.sp, color = AppColors.Success, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
