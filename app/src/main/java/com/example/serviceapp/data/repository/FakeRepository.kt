@@ -147,27 +147,25 @@ object FakeRepository {
                     val problemType   = doc.getString("problemType") ?: "normal"
 
                     when {
-                        // Unassigned pending job: no provider has accepted it yet
-                        // docProviderId.isEmpty() guards against stale cache showing
-                        // an already-accepted job as "pending"
                         status == "pending" && docProviderId.isEmpty() && problemType in allowed -> {
                             newJobs[doc.id] = docToJob(doc, "pending")
                         }
-                        // This provider's own job — any non-pending status
                         docProviderId == uid -> {
-                            when (status) {
-                                "awaiting_approval" -> newJobs[doc.id] = docToJob(doc, "awaiting")
-                                "accepted"          -> newJobs[doc.id] = docToJob(doc, "agreed")
-                                "on_the_way"        -> newJobs[doc.id] = docToJob(doc, "on_the_way")
-                                "arrived"           -> newJobs[doc.id] = docToJob(doc, "arrived")
-                                "working"           -> newJobs[doc.id] = docToJob(doc, "working")
-                                "finished", "completed" -> addToHistory(doc)
-                                // cancelled / other terminal → don't show in active list
+                            val localStatus = when (status) {
+                                "awaiting_approval" -> "awaiting"
+                                "accepted"          -> "agreed"
+                                "on_the_way"        -> "on_the_way"
+                                "arrived"           -> "arrived"
+                                "working"           -> "working"
+                                "finished", "completed" -> { addToHistory(doc); null }
+                                else -> null
                             }
+                            if (localStatus != null) newJobs[doc.id] = docToJob(doc, localStatus)
                         }
-                        // Someone else's in-progress job — not relevant, skip
                     }
                 }
+
+                android.util.Log.d("JobFlow", "jobs: ${newJobs.values.map { "${it.id.takeLast(6)}=${it.status}" }}")
 
                 val sorted = newJobs.values.sortedWith(compareBy(
                     { when (it.status) {
