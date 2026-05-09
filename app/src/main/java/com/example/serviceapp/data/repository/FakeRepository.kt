@@ -133,22 +133,11 @@ object FakeRepository {
         val uid = auth.currentUser?.uid ?: return
         val allowed = ServiceData.allowedTypes(p.skillLevel)
 
-        android.util.Log.d("JobFlow", "startListeningToRequests uid=$uid serviceType=${p.serviceType}")
-
         requestsListener?.remove()
         requestsListener = db.collection("requests")
             .whereEqualTo("serviceType", p.serviceType)
             .addSnapshotListener { snaps, err ->
-                if (err != null) {
-                    android.util.Log.e("JobFlow", "Listener error: ${err.message}")
-                    return@addSnapshotListener
-                }
-                if (snaps == null) {
-                    android.util.Log.w("JobFlow", "Snapshot is null")
-                    return@addSnapshotListener
-                }
-
-                android.util.Log.d("JobFlow", "=== Snapshot fired: ${snaps.documents.size} doc(s), fromCache=${snaps.metadata.isFromCache} ===")
+                if (err != null || snaps == null) return@addSnapshotListener
 
                 val newJobs = mutableMapOf<String, Job>()
 
@@ -157,17 +146,8 @@ object FakeRepository {
                     val docProviderId = doc.getString("providerId") ?: ""
                     val problemType   = doc.getString("problemType") ?: "normal"
 
-                    android.util.Log.d("JobFlow",
-                        "  doc=${doc.id.takeLast(6)} " +
-                        "status=$status " +
-                        "providerId=${docProviderId.takeLast(6).ifEmpty { "(empty)" }} " +
-                        "myUid=${uid.takeLast(6)} " +
-                        "fromCache=${doc.metadata.isFromCache}"
-                    )
-
                     when {
                         status == "pending" && docProviderId.isEmpty() && problemType in allowed -> {
-                            android.util.Log.d("JobFlow", "    → PENDING (available to accept)")
                             newJobs[doc.id] = docToJob(doc, "pending")
                         }
                         docProviderId == uid -> {
@@ -180,20 +160,12 @@ object FakeRepository {
                                 "finished", "completed" -> { addToHistory(doc); null }
                                 else -> null
                             }
-                            if (localStatus != null) {
-                                android.util.Log.d("JobFlow", "    → OWN JOB localStatus=$localStatus")
-                                newJobs[doc.id] = docToJob(doc, localStatus)
-                            } else {
-                                android.util.Log.d("JobFlow", "    → OWN JOB terminal/cancelled, not shown")
-                            }
-                        }
-                        else -> {
-                            android.util.Log.d("JobFlow", "    → SKIPPED (other provider's job)")
+                            if (localStatus != null) newJobs[doc.id] = docToJob(doc, localStatus)
                         }
                     }
                 }
 
-                android.util.Log.d("JobFlow", "Final jobs list: ${newJobs.values.map { "${it.id.takeLast(6)}=${it.status}" }}")
+                android.util.Log.d("JobFlow", "jobs: ${newJobs.values.map { "${it.id.takeLast(6)}=${it.status}" }}")
 
                 val sorted = newJobs.values.sortedWith(compareBy(
                     { when (it.status) {

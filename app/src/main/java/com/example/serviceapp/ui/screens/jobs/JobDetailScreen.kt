@@ -29,6 +29,7 @@ import com.example.serviceapp.viewmodel.MainViewModel
 fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
 
     val job = vm.jobs.find { it.id == id } ?: run {
+        android.util.Log.w("JobFlow", "JobDetailScreen: job $id not found in jobs list")
         Box(Modifier.fillMaxSize().background(AppColors.Background), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(AppStrings.jobNoLonger, color = AppColors.TextSecondary)
@@ -41,6 +42,9 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
         }
         return
     }
+
+    // Log every recompose so we can see status + button changes in Logcat
+    android.util.Log.d("JobFlow", "JobDetailScreen recompose: id=${id.takeLast(6)} status=${job.status} hasPoints=${vm.hasEnoughPoints}")
 
     var showPriceDialog by remember { mutableStateOf(false) }
     var customPrice     by remember { mutableStateOf(vm.provider?.baseFee?.toString() ?: "") }
