@@ -45,7 +45,10 @@ import com.example.serviceapp.viewmodel.MainViewModel
 fun DashboardScreen(vm: MainViewModel) {
 
     val p = vm.provider ?: return
-    val pendingJobs = vm.jobs.count { it.status == "pending" }
+    // Jobs the provider has accepted and is currently active on
+    val liveJobCount = vm.jobs.count { it.status in listOf("awaiting", "agreed", "on_the_way", "arrived", "working") }
+    // New pending jobs available to accept
+    val pendingCount = vm.jobs.count { it.status == "pending" }
     val completedJobs = p.history.size
 
     val availabilityOptions = listOf("available", "working", "unavailable")
@@ -173,9 +176,9 @@ fun DashboardScreen(vm: MainViewModel) {
             Spacer(Modifier.height(12.dp))
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                InfoTile(Modifier.weight(1f), AppStrings.liveJobs, "$pendingJobs", AppColors.PrimaryContainer, AppColors.Primary)
-                InfoTile(Modifier.weight(1f), AppStrings.completed, "$completedJobs", Color(0xFFE8F5E9), AppColors.Success)
-                InfoTile(Modifier.weight(1f), AppStrings.jobs, "${vm.provider?.history?.size ?: 0}", Color(0xFFF3E5F5), Color(0xFF6A1B9A))
+                InfoTile(Modifier.weight(1f), AppStrings.liveJobs,  "$liveJobCount",  AppColors.PrimaryContainer, AppColors.Primary)
+                InfoTile(Modifier.weight(1f), AppStrings.completed,  "$completedJobs", Color(0xFFE8F5E9),           AppColors.Success)
+                InfoTile(Modifier.weight(1f), AppStrings.availableJobs, "$pendingCount", Color(0xFFFFF3E0),          Color(0xFFE65100))
             }
 
             // ── Test button: add points quickly ──────────────────────────────
