@@ -147,8 +147,10 @@ object FakeRepository {
                     val problemType   = doc.getString("problemType") ?: "normal"
 
                     when {
-                        // Unassigned pending job this provider's skill covers
-                        status == "pending" && problemType in allowed -> {
+                        // Unassigned pending job: no provider has accepted it yet
+                        // docProviderId.isEmpty() guards against stale cache showing
+                        // an already-accepted job as "pending"
+                        status == "pending" && docProviderId.isEmpty() && problemType in allowed -> {
                             newJobs[doc.id] = docToJob(doc, "pending")
                         }
                         // This provider's own job — any non-pending status
@@ -237,19 +239,37 @@ object FakeRepository {
         p.points -= 400
         pointsState = p.points
 
+        val docRef = db.collection("requests").document(job.id)
+
         CoroutineScope(Dispatchers.IO).launch {
-            runCatching {
-                db.collection("requests").document(job.id).update(mapOf(
-                    "status"          to "awaiting_approval",
-                    "providerId"      to uid,
-                    "providerName"    to p.name,
-                    "providerPhone"   to p.phone,
-                    "providerRating"  to p.rating,
-                    "providerBaseFee" to p.baseFee,
-                    "acceptedAt"      to FieldValue.serverTimestamp()
-                )).await()
+            val result = runCatching {
+                // Transaction guarantees the job is still "pending" at the server
+                // before writing. This prevents a stale-cache Accept from resetting
+                // a job that has already advanced to on_the_way / arrived / etc.
+                db.runTransaction { tx ->
+                    val snap = tx.get(docRef)
+                    if (snap.getString("status") != "pending") {
+                        throw IllegalStateException("Job is no longer pending")
+                    }
+                    tx.update(docRef, mapOf(
+                        "status"          to "awaiting_approval",
+                        "providerId"      to uid,
+                        "providerName"    to p.name,
+                        "providerPhone"   to p.phone,
+                        "providerRating"  to p.rating,
+                        "providerBaseFee" to p.baseFee,
+                        "acceptedAt"      to FieldValue.serverTimestamp()
+                    ))
+                }.await()
                 db.collection("providers").document(uid)
                     .update(mapOf("points" to p.points)).await()
+            }
+            if (result.isFailure) {
+                // Transaction failed (job was not pending) — restore deducted points
+                CoroutineScope(Dispatchers.Main).launch {
+                    p.points += 400
+                    pointsState = p.points
+                }
             }
         }
         return true
