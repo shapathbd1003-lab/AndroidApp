@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.example.serviceapp.navigation.Screen
+import com.example.serviceapp.ui.components.AreaPickerDialog
 import com.example.serviceapp.ui.components.OsmMapPickerDialog
 import com.example.serviceapp.utils.AppLanguage
 import com.example.serviceapp.utils.AppStrings
@@ -56,6 +57,8 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
     var maxPrice            by remember { mutableStateOf(0.0) }
     var locationLoading     by remember { mutableStateOf(false) }
     var showMapPicker       by remember { mutableStateOf(false) }
+    var showAreaPicker      by remember { mutableStateOf(false) }
+    var selectedArea        by remember { mutableStateOf("") }
 
     val context  = LocalContext.current
     val scope    = rememberCoroutineScope()
@@ -144,6 +147,24 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                 OutlinedButton(onClick = { showLocationOffDialog = false }) {
                     Text(if (AppStrings.lang == AppLanguage.BN) "বাতিল" else "Cancel")
                 }
+            }
+        )
+    }
+
+    // Area picker dialog (single-select for client location)
+    if (showAreaPicker) {
+        AreaPickerDialog(
+            selected    = if (selectedArea.isNotBlank()) setOf(selectedArea) else emptySet(),
+            multiSelect = false,
+            accentColor = purple,
+            title       = if (isBn) "এলাকা বেছে নিন" else "Choose Your Area",
+            onDismiss   = { showAreaPicker = false },
+            onConfirm   = { picked ->
+                selectedArea = picked.firstOrNull() ?: ""
+                if (selectedArea.isNotBlank()) address = selectedArea
+                locationLat  = 0.0
+                locationLng  = 0.0
+                showAreaPicker = false
             }
         )
     }
@@ -321,6 +342,17 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                                     }
                                 }
                                 OutlinedButton(
+                                    onClick = { showAreaPicker = true },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = purple),
+                                    modifier = Modifier.height(32.dp)
+                                ) {
+                                    Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(13.dp))
+                                    Spacer(Modifier.width(3.dp))
+                                    Text(if (isBn) "এলাকা" else "Area", fontSize = 11.sp)
+                                }
+                                OutlinedButton(
                                     onClick = { showMapPicker = true },
                                     shape = RoundedCornerShape(8.dp),
                                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
@@ -334,8 +366,23 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                             }
                         }
                         Spacer(Modifier.height(10.dp))
+                        // Selected area chip
+                        if (selectedArea.isNotBlank()) {
+                            androidx.compose.material3.InputChip(
+                                selected = true,
+                                onClick  = { selectedArea = ""; address = "" },
+                                label    = { Text("📍 $selectedArea", fontSize = 12.sp) },
+                                trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(14.dp)) },
+                                colors = InputChipDefaults.inputChipColors(
+                                    selectedContainerColor = purple.copy(alpha = 0.12f),
+                                    selectedLabelColor = purple
+                                ),
+                                modifier = Modifier.padding(bottom = 6.dp)
+                            )
+                        }
                         OutlinedTextField(
-                            value = address, onValueChange = { address = it },
+                            value = address,
+                            onValueChange = { address = it; if (it != selectedArea) selectedArea = "" },
                             label = { Text(AppStrings.addressHint) },
                             leadingIcon = { Icon(Icons.Default.LocationOn, null, tint = purple) },
                             modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
@@ -383,7 +430,7 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
         Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp)) {
             Button(
                 onClick = {
-                    vm.createRequest(selectedCategoryId, description.trim(), address.trim(), minRating, maxPrice, selectedProblemType, locationLat, locationLng) {
+                    vm.createRequest(selectedCategoryId, description.trim(), address.trim(), minRating, maxPrice, selectedProblemType, locationLat, locationLng, selectedArea) {
                         nav.navigate(Screen.ClientDashboard.route) {
                             popUpTo(Screen.ClientDashboard.route) { inclusive = true }
                         }

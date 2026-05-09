@@ -48,6 +48,9 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
 
     var showPriceDialog by remember { mutableStateOf(false) }
     var customPrice     by remember { mutableStateOf(vm.provider?.baseFee?.toString() ?: "") }
+    var actionLoading   by remember { mutableStateOf(false) }
+    // Reset loading when Firestore listener updates the job status
+    LaunchedEffect(job.status) { actionLoading = false }
 
     // Price negotiation dialog
     if (showPriceDialog) {
@@ -81,7 +84,7 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
             Modifier.fillMaxWidth()
                 .background(Brush.verticalGradient(listOf(AppColors.Primary, AppColors.PrimaryLight)))
                 .statusBarsPadding()
-                .padding(top = 4.dp, bottom = 16.dp, start = 4.dp, end = 16.dp)
+                .padding(top = 4.dp, bottom = 16.dp, start = 8.dp, end = 16.dp)
         ) {
             Column {
                 IconButton(onClick = { nav.popBackStack() }) {
@@ -106,6 +109,14 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                     }
                 }
             }
+        }
+
+        if (actionLoading) {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth(),
+                color = AppColors.PrimaryLight,
+                trackColor = AppColors.Primary.copy(alpha = 0.2f)
+            )
         }
 
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp),
@@ -179,11 +190,15 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                                 modifier = Modifier.padding(14.dp))
                         }
                     } else {
-                        Button(onClick = { vm.accept(job); nav.popBackStack() },
+                        Button(
+                            onClick = { actionLoading = true; vm.accept(job); nav.popBackStack() },
                             modifier = Modifier.fillMaxWidth().height(54.dp),
+                            enabled = !actionLoading,
                             shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)) {
-                            Text(AppStrings.acceptJob, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
+                        ) {
+                            if (actionLoading) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                            else Text(AppStrings.acceptJob, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -191,20 +206,35 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                     Text(AppStrings.awaitingClientApproval, color = Color(0xFFE65100), fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(14.dp))
                 }
-                "agreed" -> Button(onClick = { vm.markOnTheWay(job.id) },
-                    modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)) {
-                    Text(AppStrings.markOnTheWay, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                "agreed" -> Button(
+                    onClick = { actionLoading = true; vm.markOnTheWay(job.id) },
+                    modifier = Modifier.fillMaxWidth().height(54.dp),
+                    enabled = !actionLoading,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
+                ) {
+                    if (actionLoading) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                    else Text(AppStrings.markOnTheWay, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 }
-                "on_the_way" -> Button(onClick = { vm.markArrived(job.id) },
-                    modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))) {
-                    Text(AppStrings.markArrived, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                "on_the_way" -> Button(
+                    onClick = { actionLoading = true; vm.markArrived(job.id) },
+                    modifier = Modifier.fillMaxWidth().height(54.dp),
+                    enabled = !actionLoading,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                ) {
+                    if (actionLoading) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                    else Text(AppStrings.markArrived, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 }
-                "arrived" -> Button(onClick = { vm.markWorking(job.id) },
-                    modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100))) {
-                    Text(AppStrings.markWorking, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                "arrived" -> Button(
+                    onClick = { actionLoading = true; vm.markWorking(job.id) },
+                    modifier = Modifier.fillMaxWidth().height(54.dp),
+                    enabled = !actionLoading,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100))
+                ) {
+                    if (actionLoading) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                    else Text(AppStrings.markWorking, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 }
                 "working" -> Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), color = Color(0xFFFFF8E1)) {
                     Text(AppStrings.waitingClientFinish, color = Color(0xFFE65100),
@@ -234,7 +264,7 @@ private fun InfoRow(icon: ImageVector, label: String, value: String, iconTint: C
         }
         Spacer(Modifier.width(12.dp))
         Column {
-            Text(label, fontSize = 11.sp, color = AppColors.TextSecondary)
+            Text(label, fontSize = 12.sp, color = AppColors.TextSecondary)
             Text(value, fontSize = 14.sp, color = AppColors.TextPrimary, fontWeight = FontWeight.Medium)
         }
     }

@@ -104,6 +104,8 @@ class MainViewModel : ViewModel() {
     fun setAgreedPrice(jobId: String, price: Double) = FakeRepository.setAgreedPrice(jobId, price)
     fun setAvailability(s: String)                   = FakeRepository.setAvailability(s)
     fun sortJobsByLocation(lat: Double, lng: Double) = FakeRepository.sortByLocation(lat, lng)
+    fun updateCoveredAreas(areas: List<String>)      = FakeRepository.updateCoveredAreas(areas)
+    val coveredAreas get() = FakeRepository.provider?.coveredAreas ?: emptyList()
 
     // ── Language ─────────────────────────────────────────────────────────────
 

@@ -44,7 +44,7 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                 .fillMaxWidth()
                 .background(Brush.horizontalGradient(listOf(Color(0xFF4A148C), Color(0xFF9C27B0))))
                 .statusBarsPadding()
-                .padding(4.dp)
+                .padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { nav.popBackStack() }) {
@@ -52,6 +52,13 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                 }
                 Text(AppStrings.requestDetailTitle, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
+        }
+        if (vm.actionLoading) {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color(0xFF9C27B0),
+                trackColor = Color(0xFF9C27B0).copy(alpha = 0.2f)
+            )
         }
 
         if (request == null) {
@@ -89,29 +96,35 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
         Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp)) {
             when (request.status) {
                 "pending" -> OutlinedButton(
-                    onClick = { vm.cancelRequest(request.id); nav.popBackStack() },
+                    onClick = { vm.cancelRequest(request.id) { nav.popBackStack() } },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
+                    enabled = !vm.actionLoading,
                     shape = RoundedCornerShape(14.dp),
                     border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFC62828))
                 ) {
-                    Text(AppStrings.cancelRequestBtn, fontSize = 15.sp, color = Color(0xFFC62828), fontWeight = FontWeight.SemiBold)
+                    if (vm.actionLoading) CircularProgressIndicator(Modifier.size(18.dp), color = Color(0xFFC62828), strokeWidth = 2.dp)
+                    else Text(AppStrings.cancelRequestBtn, fontSize = 15.sp, color = Color(0xFFC62828), fontWeight = FontWeight.SemiBold)
                 }
                 "awaiting_approval" -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedButton(
                         onClick = { vm.disagreeWithProvider(request.id) },
                         modifier = Modifier.weight(1f).height(52.dp),
+                        enabled = !vm.actionLoading,
                         shape = RoundedCornerShape(14.dp),
                         border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFC62828))
                     ) {
-                        Text(AppStrings.disagreeBtn, fontSize = 14.sp, color = Color(0xFFC62828))
+                        if (vm.actionLoading) CircularProgressIndicator(Modifier.size(18.dp), color = Color(0xFFC62828), strokeWidth = 2.dp)
+                        else Text(AppStrings.disagreeBtn, fontSize = 14.sp, color = Color(0xFFC62828))
                     }
                     Button(
                         onClick = { vm.agreeToProvider(request.id) },
                         modifier = Modifier.weight(1f).height(52.dp),
+                        enabled = !vm.actionLoading,
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
                     ) {
-                        Text(AppStrings.agreeBtn, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        if (vm.actionLoading) CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                        else Text(AppStrings.agreeBtn, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
                 }
                 // Provider traveling / at location — client just waits
@@ -122,10 +135,12 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                         vm.completeAndRate(request.id, providerRating, serviceRating, reviewText) { nav.popBackStack() }
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
+                    enabled = !vm.actionLoading,
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = purple)
                 ) {
-                    Text(AppStrings.finishJobBtn, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    if (vm.actionLoading) CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                    else Text(AppStrings.finishJobBtn, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 }
                 // Job already finished but not yet rated
                 "finished", "completed" -> if (request.rating == 0) Button(
@@ -133,11 +148,12 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                         vm.completeAndRate(request.id, providerRating, serviceRating, reviewText) { nav.popBackStack() }
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
+                    enabled = !vm.actionLoading && (providerRating > 0 || serviceRating > 0),
                     shape = RoundedCornerShape(14.dp),
-                    enabled = providerRating > 0 || serviceRating > 0,
                     colors = ButtonDefaults.buttonColors(containerColor = purple, disabledContainerColor = Color(0xFFBDBDBD))
                 ) {
-                    Text(AppStrings.submitReviewBtn, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    if (vm.actionLoading) CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                    else Text(AppStrings.submitReviewBtn, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -234,10 +250,7 @@ private fun ProviderApprovalCard(req: ServiceRequest) {
             InfoRow("💰 ${AppStrings.providerFeeLbl}", "৳ ${req.providerBaseFee.toInt()} ${AppStrings.perService}")
             Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFFE8F5E9)) {
                 Text(
-                    if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN)
-                        AppStrings.hireQuestion
-                    else
-                        AppStrings.hireQuestion,
+                    AppStrings.hireQuestion,
                     fontSize = 13.sp, color = Color(0xFF2E7D32),
                     modifier = Modifier.padding(10.dp)
                 )

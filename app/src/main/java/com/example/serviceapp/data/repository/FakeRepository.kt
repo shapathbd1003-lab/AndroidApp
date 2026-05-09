@@ -110,7 +110,8 @@ object FakeRepository {
             skillLevel   = doc.getString("skillLevel")   ?: "general",
             advance      = doc.getDouble("advance")      ?: 0.0,
             points       = (doc.getLong("points")        ?: 500).toInt(),
-            isApproved   = if (approvedRaw == null) null else approvedRaw as? Boolean
+            isApproved   = if (approvedRaw == null) null else approvedRaw as? Boolean,
+            coveredAreas = (doc.get("coveredAreas") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
         )
         pointsState = provider?.points ?: 500
         if (doc.getLong("points") == null) {
@@ -140,14 +141,20 @@ object FakeRepository {
                 if (err != null || snaps == null) return@addSnapshotListener
 
                 val newJobs = mutableMapOf<String, Job>()
+                val pAreas  = provider?.coveredAreas ?: emptyList()
 
                 snaps.documents.forEach { doc ->
                     val status        = doc.getString("status")     ?: return@forEach
                     val docProviderId = doc.getString("providerId") ?: ""
                     val problemType   = doc.getString("problemType") ?: "normal"
+                    val docArea       = doc.getString("area")        ?: ""
+
+                    val areaMatch = pAreas.isEmpty() ||
+                        pAreas.any { it.equals(docArea, ignoreCase = true) }
 
                     when {
-                        status == "pending" && docProviderId.isEmpty() && problemType in allowed -> {
+                        status == "pending" && docProviderId.isEmpty() &&
+                        problemType in allowed && areaMatch -> {
                             newJobs[doc.id] = docToJob(doc, "pending")
                         }
                         docProviderId == uid -> {
@@ -334,6 +341,20 @@ object FakeRepository {
         }.sortedBy { if (it.distanceKm >= 0) it.distanceKm else Double.MAX_VALUE }
         jobs.clear()
         jobs.addAll(withDistance)
+    }
+
+    fun updateCoveredAreas(areas: List<String>) {
+        val p   = provider ?: return
+        val uid = auth.currentUser?.uid ?: return
+        p.coveredAreas = areas
+        CoroutineScope(Dispatchers.IO).launch {
+            runCatching {
+                db.collection("providers").document(uid)
+                    .update(mapOf("coveredAreas" to areas)).await()
+            }
+        }
+        // Restart listener so area filter applies immediately
+        startListeningToRequests()
     }
 
     fun clearHistory() {

@@ -45,7 +45,7 @@ fun ClientProfileScreen(vm: ClientViewModel, nav: NavController) {
                 .fillMaxWidth()
                 .background(Brush.horizontalGradient(listOf(Color(0xFF4A148C), Color(0xFF9C27B0))))
                 .statusBarsPadding()
-                .padding(4.dp)
+                .padding(start = 4.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { nav.popBackStack() }) {
@@ -205,7 +205,7 @@ private fun StatCard(modifier: Modifier, value: String, label: String, textColor
     Card(modifier = modifier, shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = bg), elevation = CardDefaults.cardElevation(0.dp)) {
         Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(value, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = textColor)
-            Text(label, fontSize = 11.sp, color = textColor.copy(alpha = 0.7f))
+            Text(label, fontSize = 12.sp, color = textColor.copy(alpha = 0.7f))
         }
     }
 }

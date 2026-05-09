@@ -26,7 +26,8 @@ data class ServiceRequest(
     val clientDeleted:   Boolean = false,
     val providerDeleted: Boolean = false,
     var agreedPrice:     Double  = 0.0,
-    val cancelReason:    String  = ""
+    val cancelReason:    String  = "",
+    val area:            String  = ""  // selected area name (for provider area filtering)
     // Full status machine:
     // created(=pending) → accepted(awaiting_approval) → confirmed(accepted)
     // → on_the_way → arrived → working → finished(=completed)

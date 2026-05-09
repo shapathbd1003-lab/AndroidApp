@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -96,18 +95,6 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
             }
     }
 
-    val availabilityOptions = listOf("available", "working", "unavailable")
-    val availabilityLabels = mapOf(
-        "available" to AppStrings.available,
-        "working" to AppStrings.working,
-        "unavailable" to AppStrings.notAvailable
-    )
-    val availabilityColors = mapOf(
-        "available" to AppColors.Success,
-        "working" to AppColors.Working,
-        "unavailable" to AppColors.Error
-    )
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -157,35 +144,6 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                     Text("%.1f".format(p.rating), fontSize = 13.sp, color = Color.White)
                 }
 
-                Spacer(Modifier.height(16.dp))
-
-                // Availability selector
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    availabilityOptions.forEach { opt ->
-                        val isSelected = p.availability == opt
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.15f),
-                            modifier = Modifier
-                                .weight(1f)
-                                .defaultMinSize(minHeight = 40.dp)
-                                .clickable { vm.setAvailability(opt) }
-                        ) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp)) {
-                                Text(
-                                    availabilityLabels[opt] ?: opt,
-                                    fontSize = 11.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (isSelected) availabilityColors[opt] ?: AppColors.Primary else Color.White,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                )
-                            }
-                        }
-                    }
-                }
             }
         }
 
@@ -502,7 +460,7 @@ private fun InfoRow(icon: ImageVector, label: String, value: String) {
         }
         Spacer(Modifier.width(12.dp))
         Column {
-            Text(label, fontSize = 11.sp, color = AppColors.TextSecondary)
+            Text(label, fontSize = 12.sp, color = AppColors.TextSecondary)
             Text(value, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = AppColors.TextPrimary)
         }
     }
@@ -542,7 +500,7 @@ private fun StatTile(modifier: Modifier, label: String, value: String, textColor
     ) {
         Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(value, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = textColor)
-            Text(label, fontSize = 11.sp, color = textColor.copy(alpha = 0.7f))
+            Text(label, fontSize = 12.sp, color = textColor.copy(alpha = 0.7f))
         }
     }
 }

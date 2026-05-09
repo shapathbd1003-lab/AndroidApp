@@ -1,7 +1,6 @@
 package com.example.serviceapp.ui.screens.dashboard
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
@@ -50,18 +50,6 @@ fun DashboardScreen(vm: MainViewModel) {
     // New pending jobs available to accept
     val pendingCount = vm.jobs.count { it.status == "pending" }
     val completedJobs = p.history.size
-
-    val availabilityOptions = listOf("available", "working", "unavailable")
-    val availabilityLabels = mapOf(
-        "available" to AppStrings.available,
-        "working" to AppStrings.working,
-        "unavailable" to AppStrings.notAvailable
-    )
-    val availabilityColors = mapOf(
-        "available" to AppColors.Success,
-        "working" to AppColors.Working,
-        "unavailable" to AppColors.Error
-    )
 
     Column(
         modifier = Modifier
@@ -118,44 +106,24 @@ fun DashboardScreen(vm: MainViewModel) {
                             }
                         }
                     }
-                    // Availability dot indicator
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .background(
-                                availabilityColors[p.availability] ?: AppColors.Success,
-                                CircleShape
-                            )
-                    )
                 }
 
-                Spacer(Modifier.height(16.dp))
-
-                // Availability selector
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    availabilityOptions.forEach { opt ->
-                        val isSelected = p.availability == opt
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.15f),
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { vm.setAvailability(opt) }
-                        ) {
-                            Text(
-                                availabilityLabels[opt] ?: opt,
-                                fontSize = 11.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) availabilityColors[opt] ?: AppColors.Primary else Color.White,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
-                        }
+                // Area filter indicator
+                if (p.coveredAreas.isNotEmpty()) {
+                    Spacer(Modifier.height(10.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(Icons.Default.FilterList, null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(13.dp))
+                        Text(
+                            p.coveredAreas.take(3).joinToString(", ") +
+                                if (p.coveredAreas.size > 3) " +${p.coveredAreas.size - 3}" else "",
+                            fontSize = 11.sp, color = Color.White.copy(alpha = 0.8f)
+                        )
                     }
                 }
+
             }
         }
 
@@ -235,7 +203,7 @@ private fun StatCard(modifier: Modifier, label: String, value: String, icon: Ima
             }
             Spacer(Modifier.height(6.dp))
             Text(value, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
-            Text(label, fontSize = 11.sp, color = AppColors.TextSecondary)
+            Text(label, fontSize = 12.sp, color = AppColors.TextSecondary)
         }
     }
 }
@@ -250,7 +218,7 @@ private fun InfoTile(modifier: Modifier, label: String, value: String, bg: Color
     ) {
         Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = textColor)
-            Text(label, fontSize = 11.sp, color = textColor.copy(alpha = 0.7f))
+            Text(label, fontSize = 12.sp, color = textColor.copy(alpha = 0.7f))
         }
     }
 }

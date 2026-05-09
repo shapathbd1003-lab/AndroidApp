@@ -20,6 +20,7 @@ class ClientViewModel : ViewModel() {
     var registerLoading by mutableStateOf(false); private set
     var registerError   by mutableStateOf("");    private set
     var requestLoading  by mutableStateOf(false); private set
+    var actionLoading   by mutableStateOf(false); private set
     var sessionLoading  by mutableStateOf(true);  private set
 
     private var requestsListener: ListenerRegistration? = null
@@ -60,31 +61,47 @@ class ClientViewModel : ViewModel() {
                       minRating: Double = 0.0, maxPrice: Double = 0.0,
                       problemType: String = "normal",
                       lat: Double = 0.0, lng: Double = 0.0,
+                      area: String = "",
                       onSuccess: () -> Unit) {
         viewModelScope.launch {
             requestLoading = true
-            ClientRepository.createRequest(serviceType, description, address, minRating, maxPrice, problemType, lat, lng).fold(
+            ClientRepository.createRequest(serviceType, description, address, minRating, maxPrice, problemType, lat, lng, area).fold(
                 onSuccess = { requestLoading = false; onSuccess() },
                 onFailure = { requestLoading = false }
             )
         }
     }
 
-    fun cancelRequest(requestId: String) {
-        viewModelScope.launch { ClientRepository.cancelRequest(requestId) }
+    fun cancelRequest(requestId: String, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            actionLoading = true
+            ClientRepository.cancelRequest(requestId)
+            actionLoading = false
+            onDone()
+        }
     }
 
     fun agreeToProvider(requestId: String) {
-        viewModelScope.launch { ClientRepository.agreeToProvider(requestId) }
+        viewModelScope.launch {
+            actionLoading = true
+            ClientRepository.agreeToProvider(requestId)
+            actionLoading = false
+        }
     }
 
     fun disagreeWithProvider(requestId: String) {
-        viewModelScope.launch { ClientRepository.disagreeWithProvider(requestId) }
+        viewModelScope.launch {
+            actionLoading = true
+            ClientRepository.disagreeWithProvider(requestId)
+            actionLoading = false
+        }
     }
 
     fun completeAndRate(requestId: String, rating: Int, serviceRating: Int = 0, comment: String = "", onDone: () -> Unit) {
         viewModelScope.launch {
+            actionLoading = true
             ClientRepository.completeAndRate(requestId, rating, serviceRating, comment)
+            actionLoading = false
             onDone()
         }
     }

@@ -4,7 +4,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,23 +20,31 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.rounded.AttachMoney
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.rounded.AttachMoney
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -42,6 +53,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -50,16 +62,19 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.serviceapp.ui.components.AreaPickerDialog
 import com.example.serviceapp.ui.components.AvatarPicker
 import com.example.serviceapp.ui.theme.AppColors
+import com.example.serviceapp.utils.AppLanguage
 import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.viewmodel.MainViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun EditProfileScreen(vm: MainViewModel, nav: NavController) {
 
     val p = vm.provider ?: return
+    val isBn = AppStrings.lang == AppLanguage.BN
 
     var name by remember { mutableStateOf(p.name) }
     var phone by remember { mutableStateOf(p.phone) }
@@ -68,6 +83,23 @@ fun EditProfileScreen(vm: MainViewModel, nav: NavController) {
     var baseFeeText by remember { mutableStateOf(p.baseFee.toInt().toString()) }
     var photo by remember { mutableStateOf(p.photo) }
     var certificate by remember { mutableStateOf(p.certificate) }
+    var selectedAreas by remember { mutableStateOf(p.coveredAreas.toSet()) }
+    var showAreaPicker by remember { mutableStateOf(false) }
+
+    if (showAreaPicker) {
+        AreaPickerDialog(
+            selected    = selectedAreas,
+            multiSelect = true,
+            accentColor = AppColors.Primary,
+            title       = if (isBn) "সেবা এলাকা বেছে নিন" else "Select Service Areas",
+            onDismiss   = { showAreaPicker = false },
+            onConfirm   = { areas ->
+                selectedAreas = areas
+                showAreaPicker = false
+                vm.updateCoveredAreas(areas.toList())
+            }
+        )
+    }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -234,6 +266,85 @@ fun EditProfileScreen(vm: MainViewModel, nav: NavController) {
                         border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.Primary)
                     ) {
                         Text(AppStrings.uploadCertificate, color = AppColors.Primary)
+                    }
+
+                    Spacer(Modifier.height(20.dp))
+                    HorizontalDivider(color = AppColors.Divider)
+                    Spacer(Modifier.height(20.dp))
+
+                    // ── Service Area ─────────────────────────────────────────
+                    SectionLabel(if (isBn) "সেবা এলাকা" else "Service Area")
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        if (isBn) "কোন কোন এলাকায় কাজ করবেন? খালি রাখলে সব এলাকার কাজ দেখাবে।"
+                        else "Which areas do you serve? Leave empty to see jobs from all areas.",
+                        fontSize = 12.sp, color = AppColors.TextSecondary
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    // Selected area chips
+                    if (selectedAreas.isNotEmpty()) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            selectedAreas.sorted().forEach { area ->
+                                InputChip(
+                                    selected = true,
+                                    onClick  = {
+                                        val updated = selectedAreas - area
+                                        selectedAreas = updated
+                                        vm.updateCoveredAreas(updated.toList())
+                                    },
+                                    label = { Text(area, fontSize = 12.sp) },
+                                    trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(14.dp)) },
+                                    colors = InputChipDefaults.inputChipColors(
+                                        selectedContainerColor = AppColors.PrimaryContainer,
+                                        selectedLabelColor = AppColors.Primary
+                                    )
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    }
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = AppColors.PrimaryContainer,
+                            modifier = Modifier.clickable { showAreaPicker = true }
+                        ) {
+                            Row(
+                                Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(Icons.Default.LocationOn, null, tint = AppColors.Primary, modifier = Modifier.size(16.dp))
+                                Text(
+                                    if (isBn) "+ এলাকা যোগ করুন" else "+ Add Areas",
+                                    fontSize = 13.sp, color = AppColors.Primary, fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                        if (selectedAreas.isNotEmpty()) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = AppColors.Error.copy(alpha = 0.1f),
+                                modifier = Modifier.clickable {
+                                    selectedAreas = emptySet()
+                                    vm.updateCoveredAreas(emptyList())
+                                }
+                            ) {
+                                Text(
+                                    if (isBn) "সব বাতিল" else "Clear All",
+                                    fontSize = 12.sp, color = AppColors.Error,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                )
+                            }
+                        }
                     }
 
                     Spacer(Modifier.height(24.dp))

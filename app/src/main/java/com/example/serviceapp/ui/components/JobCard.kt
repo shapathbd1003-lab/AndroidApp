@@ -21,10 +21,15 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -55,6 +60,10 @@ fun JobCard(
     val isArrived   = job.status == "arrived"
     val isWorking   = job.status == "working"
 
+    var actionLoading by remember { mutableStateOf(false) }
+    // Auto-reset when Firestore listener updates the status
+    androidx.compose.runtime.LaunchedEffect(job.status) { actionLoading = false }
+
     Card(
         modifier = Modifier
             .padding(horizontal = 16.dp, vertical = 6.dp)
@@ -76,6 +85,8 @@ fun JobCard(
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 15.sp,
                     color = AppColors.TextPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -175,13 +186,18 @@ fun JobCard(
                             }
                         } else {
                             Button(
-                                onClick = { onAccept() },
+                                onClick = { if (!actionLoading) { actionLoading = true; onAccept() } },
+                                enabled = !actionLoading,
                                 shape = RoundedCornerShape(10.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
                             ) {
-                                Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text(AppStrings.accept, fontSize = 13.sp)
+                                if (actionLoading) {
+                                    CircularProgressIndicator(Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                                } else {
+                                    Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(AppStrings.accept, fontSize = 13.sp)
+                                }
                             }
                         }
                     }
@@ -190,19 +206,31 @@ fun JobCard(
                             fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
                     }
                     isAgreed && onMarkOnTheWay != null -> Button(
-                        onClick = { onMarkOnTheWay() }, shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)) {
-                        Text(AppStrings.markOnTheWay, fontSize = 13.sp)
+                        onClick = { if (!actionLoading) { actionLoading = true; onMarkOnTheWay() } },
+                        enabled = !actionLoading,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
+                    ) {
+                        if (actionLoading) CircularProgressIndicator(Modifier.size(15.dp), color = Color.White, strokeWidth = 2.dp)
+                        else Text(AppStrings.markOnTheWay, fontSize = 13.sp)
                     }
                     isOnTheWay && onMarkArrived != null -> Button(
-                        onClick = { onMarkArrived() }, shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))) {
-                        Text(AppStrings.markArrived, fontSize = 13.sp)
+                        onClick = { if (!actionLoading) { actionLoading = true; onMarkArrived() } },
+                        enabled = !actionLoading,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                    ) {
+                        if (actionLoading) CircularProgressIndicator(Modifier.size(15.dp), color = Color.White, strokeWidth = 2.dp)
+                        else Text(AppStrings.markArrived, fontSize = 13.sp)
                     }
                     isArrived && onMarkWorking != null -> Button(
-                        onClick = { onMarkWorking() }, shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100))) {
-                        Text(AppStrings.markWorking, fontSize = 13.sp)
+                        onClick = { if (!actionLoading) { actionLoading = true; onMarkWorking() } },
+                        enabled = !actionLoading,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100))
+                    ) {
+                        if (actionLoading) CircularProgressIndicator(Modifier.size(15.dp), color = Color.White, strokeWidth = 2.dp)
+                        else Text(AppStrings.markWorking, fontSize = 13.sp)
                     }
                     isWorking -> Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFFFF8E1)) {
                         Text(AppStrings.waitingClientFinish, fontSize = 12.sp, color = Color(0xFFE65100),

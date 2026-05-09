@@ -69,7 +69,8 @@ object ClientRepository {
         serviceType: String, description: String, address: String,
         minRating: Double = 0.0, maxPrice: Double = 0.0,
         problemType: String = "normal",
-        lat: Double = 0.0, lng: Double = 0.0
+        lat: Double = 0.0, lng: Double = 0.0,
+        area: String = ""
     ): Result<String> = runCatching {
         val c   = client ?: error("Not logged in")
         val rid = UUID.randomUUID().toString()
@@ -81,6 +82,7 @@ object ClientRepository {
             "serviceType"     to serviceType,
             "description"     to description,
             "address"         to address,
+            "area"            to area,
             "lat"             to lat,
             "lng"             to lng,
             "status"          to "pending",

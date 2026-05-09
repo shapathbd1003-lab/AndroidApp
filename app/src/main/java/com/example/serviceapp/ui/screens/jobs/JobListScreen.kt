@@ -71,10 +71,7 @@ fun JobListScreen(vm: MainViewModel, nav: NavController) {
                     if (pendingCount > 0) {
                         Icon(Icons.Default.LocationOn, null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(13.dp))
                         Text(
-                            if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN)
-                                "$pendingCount ${AppStrings.nearestSorted}"
-                            else
-                                "$pendingCount ${AppStrings.nearestSorted}",
+                            "$pendingCount ${AppStrings.nearestSorted}",
                             fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f)
                         )
                     } else {
