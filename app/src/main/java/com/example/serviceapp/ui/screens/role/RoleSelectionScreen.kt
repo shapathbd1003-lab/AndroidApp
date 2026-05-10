@@ -11,6 +11,11 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -25,10 +30,42 @@ import com.example.serviceapp.navigation.Screen
 import com.example.serviceapp.ui.theme.AppColors
 import com.example.serviceapp.utils.AppLanguage
 import com.example.serviceapp.utils.AppStrings
+import com.example.serviceapp.viewmodel.ClientViewModel
 import com.example.serviceapp.viewmodel.MainViewModel
 
 @Composable
-fun RoleSelectionScreen(vm: MainViewModel, nav: NavController) {
+fun RoleSelectionScreen(vm: MainViewModel, cvm: ClientViewModel, nav: NavController) {
+
+    // Restore session automatically (handles notification tap when app process was killed).
+    // Try provider session first, then client session.
+    var sessionChecked by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        vm.loadCurrentSession { providerLoaded ->
+            if (providerLoaded) {
+                val dest = if (vm.isApproved == true) Screen.Main.route else Screen.Pending.route
+                nav.navigate(dest) { popUpTo(0) { inclusive = true } }
+            } else {
+                cvm.loadCurrentSession { clientLoaded ->
+                    if (clientLoaded) {
+                        nav.navigate(Screen.ClientDashboard.route) { popUpTo(0) { inclusive = true } }
+                    }
+                    sessionChecked = true
+                }
+            }
+        }
+    }
+
+    if (!sessionChecked) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Brush.verticalGradient(listOf(AppColors.Primary, AppColors.PrimaryLight, Color(0xFF5C6BC0)))),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Color.White)
+        }
+        return
+    }
 
     Box(
         modifier = Modifier

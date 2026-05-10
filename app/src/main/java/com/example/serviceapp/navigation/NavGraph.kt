@@ -31,7 +31,7 @@ fun NavGraph(vm: MainViewModel, cvm: ClientViewModel) {
 
         // ── Role selection ────────────────────────────────────────────────────
         composable(Screen.RoleSelection.route) {
-            RoleSelectionScreen(vm, nav)
+            RoleSelectionScreen(vm, cvm, nav)
         }
 
         // ── Provider flow ─────────────────────────────────────────────────────

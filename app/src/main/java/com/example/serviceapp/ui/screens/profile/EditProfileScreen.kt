@@ -352,13 +352,15 @@ fun EditProfileScreen(vm: MainViewModel, nav: NavController) {
                     Button(
                         onClick = {
                             if (canSave) {
-                                p.name = name.trim()
-                                p.phone = phone.trim()
-                                p.email = email.trim()
-                                p.nid = nid.trim()
-                                p.photo = photo
-                                p.baseFee = baseFeeText.toDoubleOrNull() ?: p.baseFee
+                                val newFee = baseFeeText.toDoubleOrNull() ?: p.baseFee
+                                p.name        = name.trim()
+                                p.phone       = phone.trim()
+                                p.email       = email.trim()
+                                p.nid         = nid.trim()
+                                p.photo       = photo
+                                p.baseFee     = newFee
                                 p.certificate = certificate
+                                vm.saveProfile(name.trim(), phone.trim(), email.trim(), nid.trim(), photo, newFee, certificate)
                                 nav.popBackStack()
                             }
                         },

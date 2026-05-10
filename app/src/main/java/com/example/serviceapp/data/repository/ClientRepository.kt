@@ -70,7 +70,8 @@ object ClientRepository {
         minRating: Double = 0.0, maxPrice: Double = 0.0,
         problemType: String = "normal",
         lat: Double = 0.0, lng: Double = 0.0,
-        area: String = ""
+        area: String = "",
+        minSkillLevel: String = ""
     ): Result<String> = runCatching {
         val c   = client ?: error("Not logged in")
         val rid = UUID.randomUUID().toString()
@@ -89,6 +90,7 @@ object ClientRepository {
             "minRating"       to minRating,
             "maxPrice"        to maxPrice,
             "problemType"     to problemType,
+            "minSkillLevel"   to minSkillLevel,
             "providerId"      to "",
             "providerName"    to "",
             "providerPhone"   to "",
@@ -120,7 +122,15 @@ object ClientRepository {
         ).await()
     }
 
-    // ── Complete + review ─────────────────────────────────────────────────────
+    // ── Mark job done without rating (client confirms work is finished) ────────
+    suspend fun completeJob(requestId: String): Result<Unit> = runCatching {
+        db.collection("requests").document(requestId).update(mapOf(
+            "status"      to "finished",
+            "completedAt" to FieldValue.serverTimestamp()
+        )).await()
+    }
+
+    // ── Submit rating after job is finished ───────────────────────────────────
     suspend fun completeAndRate(requestId: String, rating: Int, serviceRating: Int = 0, comment: String = ""): Result<Unit> = runCatching {
         db.collection("requests").document(requestId).update(mapOf(
             "status"        to "finished",
@@ -130,36 +140,46 @@ object ClientRepository {
             "completedAt"   to FieldValue.serverTimestamp()
         )).await()
 
-        if (rating > 0) {
+        if (rating > 0 || serviceRating > 0) {
             val req = requests.find { it.id == requestId }
             if (req != null && req.providerId.isNotBlank()) {
-                // Save review
+                // Save review with both rating dimensions
                 val reviewId = UUID.randomUUID().toString()
                 db.collection("reviews").document(reviewId).set(hashMapOf<String, Any?>(
-                    "providerId"  to req.providerId,
-                    "clientId"    to (client?.id ?: ""),
-                    "clientName"  to (client?.name ?: ""),
-                    "requestId"   to requestId,
-                    "serviceType" to req.serviceType,
-                    "rating"      to rating,
-                    "comment"     to comment,
-                    "createdAt"   to FieldValue.serverTimestamp()
+                    "providerId"    to req.providerId,
+                    "clientId"      to (client?.id ?: ""),
+                    "clientName"    to (client?.name ?: ""),
+                    "requestId"     to requestId,
+                    "serviceType"   to req.serviceType,
+                    "rating"        to rating,
+                    "serviceRating" to serviceRating,
+                    "comment"       to comment,
+                    "createdAt"     to FieldValue.serverTimestamp()
                 )).await()
 
-                // Update provider's average rating + bonus points
+                // Recalculate provider's average rating using combined behavior + service score
                 val allReviews = db.collection("reviews")
                     .whereEqualTo("providerId", req.providerId)
                     .get().await()
-                val ratings = allReviews.documents.mapNotNull { it.getLong("rating")?.toInt() }.filter { it > 0 }
-                if (ratings.isNotEmpty()) {
-                    val avg        = ratings.average()
+                val combinedRatings = allReviews.documents.mapNotNull { doc ->
+                    val b = (doc.getLong("rating")        ?: 0).toInt()
+                    val s = (doc.getLong("serviceRating") ?: 0).toInt()
+                    when {
+                        b > 0 && s > 0 -> (b + s) / 2.0
+                        b > 0          -> b.toDouble()
+                        s > 0          -> s.toDouble()
+                        else           -> null
+                    }
+                }
+                if (combinedRatings.isNotEmpty()) {
+                    val avg         = combinedRatings.average()
                     val bonusPoints = when (rating) { 5 -> 100; 4 -> 30; else -> 0 }
-                    val provDoc    = db.collection("providers").document(req.providerId).get().await()
-                    val curPoints  = (provDoc.getLong("points") ?: 500).toInt()
+                    val provDoc     = db.collection("providers").document(req.providerId).get().await()
+                    val curPoints   = (provDoc.getLong("points") ?: 500).toInt()
                     db.collection("providers").document(req.providerId).update(mapOf(
-                        "rating"       to avg,
-                        "completedJobs" to ratings.size,
-                        "points"       to curPoints + bonusPoints
+                        "rating"        to avg,
+                        "completedJobs" to combinedRatings.size,
+                        "points"        to curPoints + bonusPoints
                     )).await()
                 }
             }
@@ -217,7 +237,8 @@ object ClientRepository {
                         problemType     = doc.getString("problemType")    ?: "normal",
                         lat             = doc.getDouble("lat")            ?: 0.0,
                         lng             = doc.getDouble("lng")            ?: 0.0,
-                        agreedPrice     = doc.getDouble("agreedPrice")    ?: 0.0
+                        agreedPrice     = doc.getDouble("agreedPrice")    ?: 0.0,
+                        minSkillLevel   = doc.getString("minSkillLevel")  ?: ""
                     ))
                 }
             }

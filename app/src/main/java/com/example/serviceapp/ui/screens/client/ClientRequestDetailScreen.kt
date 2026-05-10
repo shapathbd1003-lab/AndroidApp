@@ -80,10 +80,8 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
             if (request.minRating > 0 || request.maxPrice > 0) FilterSummaryCard(request)
             if (request.status == "awaiting_approval") ProviderApprovalCard(request)
             else if (request.status in listOf("accepted", "on_the_way", "arrived", "working", "finished", "completed")) ProviderInfoCard(request)
-            // Show rating card when provider is working (client finishes job)
-            // OR when already finished but not yet rated
-            val canRate = request.status == "working" ||
-                ((request.status == "finished" || request.status == "completed") && request.rating == 0)
+            // Rating only after the job is fully completed, and only if not yet rated
+            val canRate = (request.status == "finished" || request.status == "completed") && request.rating == 0
             if (canRate)
                 RatingCard(providerRating, serviceRating, reviewText, { providerRating = it }, { serviceRating = it }, { reviewText = it })
             if ((request.status == "finished" || request.status == "completed") && request.rating > 0) CompletedReviewCard(request)
@@ -129,11 +127,9 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                 }
                 // Provider traveling / at location — client just waits
                 "on_the_way", "arrived" -> { /* Provider is on the way */ }
-                // Provider is working — client marks job as done (with optional rating)
+                // Provider is working — client marks job done (rating comes after on the next screen state)
                 "working" -> Button(
-                    onClick = {
-                        vm.completeAndRate(request.id, providerRating, serviceRating, reviewText) { nav.popBackStack() }
-                    },
+                    onClick = { vm.completeJob(request.id) },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     enabled = !vm.actionLoading,
                     shape = RoundedCornerShape(14.dp),
@@ -233,8 +229,7 @@ private fun ProviderApprovalCard(req: ServiceRequest) {
             Text(AppStrings.providerProposal, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1A237E))
             HorizontalDivider(color = Color(0xFF1A237E).copy(alpha = 0.2f))
             InfoRow("👤 ${AppStrings.providerName}",  req.providerName)
-            InfoRow("📞 ${AppStrings.providerPhone}",  req.providerPhone)
-            // Rating with stars
+            // Rating with stars (phone is hidden until client confirms hire)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("⭐ ${AppStrings.providerRatingLbl}", fontSize = 13.sp, color = Color(0xFF757575), modifier = Modifier.widthIn(min = 90.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {

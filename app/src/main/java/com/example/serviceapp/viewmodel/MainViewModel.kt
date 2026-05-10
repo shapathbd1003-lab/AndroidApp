@@ -107,6 +107,11 @@ class MainViewModel : ViewModel() {
     fun updateCoveredAreas(areas: List<String>)      = FakeRepository.updateCoveredAreas(areas)
     val coveredAreas get() = FakeRepository.provider?.coveredAreas ?: emptyList()
 
+    fun saveProfile(
+        name: String, phone: String, email: String, nid: String,
+        photo: String, baseFee: Double, certificate: String
+    ) = FakeRepository.saveProfile(name, phone, email, nid, photo, baseFee, certificate)
+
     // ── Language ─────────────────────────────────────────────────────────────
 
     fun toggleLanguage() = AppStrings.toggle()

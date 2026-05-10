@@ -58,6 +58,7 @@ import com.example.serviceapp.navigation.Screen
 import com.example.serviceapp.ui.theme.AppColors
 import com.example.serviceapp.utils.AppLanguage
 import com.example.serviceapp.utils.AppStrings
+import com.example.serviceapp.utils.verticalScrollbar
 import com.example.serviceapp.viewmodel.MainViewModel
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -75,8 +76,8 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
 
     val reviews             = remember { mutableStateListOf<ReviewItem>() }
     var showDeleteConfirm  by remember { mutableStateOf(false) }
-    // Track provider's ratings for each client (jobId → stars) for reactive UI
     val clientRatings       = remember { androidx.compose.runtime.mutableStateMapOf<String, Int>() }
+    val scrollState         = rememberScrollState()
     LaunchedEffect(p.id) {
         FirebaseFirestore.getInstance()
             .collection("reviews")
@@ -99,7 +100,8 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.Background)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
+            .verticalScrollbar(scrollState)
     ) {
         Box(
             modifier = Modifier
@@ -131,17 +133,27 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                 // Skill level badge
                 SkillBadge(p.skillLevel)
                 Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    repeat(5) { i ->
-                        Icon(
-                            Icons.Default.Star,
-                            null,
-                            tint = if (i < p.rating.toInt()) Color(0xFFFFB300) else Color.White.copy(alpha = 0.3f),
-                            modifier = Modifier.size(16.dp)
-                        )
+                if (p.ratingCount > 0) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        repeat(5) { i ->
+                            Icon(
+                                Icons.Default.Star,
+                                null,
+                                tint = if (i < p.rating.toInt()) Color(0xFFFFB300) else Color.White.copy(alpha = 0.3f),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        Spacer(Modifier.width(6.dp))
+                        Text("%.1f".format(p.rating), fontSize = 13.sp, color = Color.White)
                     }
-                    Spacer(Modifier.width(6.dp))
-                    Text("%.1f".format(p.rating), fontSize = 13.sp, color = Color.White)
+                } else {
+                    Text(
+                        if (com.example.serviceapp.utils.AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN)
+                            "এখনো কোনো রেটিং নেই"
+                        else
+                            "No rating yet",
+                        fontSize = 12.sp, color = Color.White.copy(alpha = 0.6f)
+                    )
                 }
 
             }

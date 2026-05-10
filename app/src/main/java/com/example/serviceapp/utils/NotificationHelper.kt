@@ -37,8 +37,10 @@ object NotificationHelper {
         val ctx = appContext ?: return
         val manager = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+        // FLAG_ACTIVITY_SINGLE_TOP keeps the existing activity alive when it is already
+        // in the foreground, so the user stays on whichever screen they were on.
         val intent = Intent(ctx, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         val pendingIntent = PendingIntent.getActivity(
             ctx, 0, intent,

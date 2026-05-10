@@ -9,6 +9,7 @@ import com.example.serviceapp.data.model.Job
 import com.example.serviceapp.data.model.Provider
 import com.example.serviceapp.data.model.ServiceHistory
 import com.example.serviceapp.utils.AppStrings
+import com.example.serviceapp.utils.ImageUploader
 import com.example.serviceapp.utils.ServiceData
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
@@ -35,8 +36,31 @@ object FakeRepository {
     // overwrite the other's stale data, causing status to cycle backwards.
     private var requestsListener: ListenerRegistration? = null
     private var approvalListener: ListenerRegistration? = null
+    private var profileListener:  ListenerRegistration? = null
 
     val serviceTypes get() = ServiceData.categories.map { it.id }
+
+    // ── Profile listener — keeps points/rating in sync with Firestore ─────────
+    fun startProfileListener() {
+        val uid = auth.currentUser?.uid ?: return
+        profileListener?.remove()
+        profileListener = db.collection("providers").document(uid).addSnapshotListener { snap, _ ->
+            val p = provider ?: return@addSnapshotListener
+            if (snap == null || !snap.exists()) return@addSnapshotListener
+            val pts = (snap.getLong("points")        ?: p.points.toLong()).toInt()
+            val rat =  snap.getDouble("rating")      ?: p.rating
+            val cnt = (snap.getLong("completedJobs") ?: p.ratingCount.toLong()).toInt()
+            if (pts != p.points || rat != p.rating || cnt != p.ratingCount) {
+                provider = provider?.copy(points = pts, rating = rat, ratingCount = cnt)
+                pointsState = pts
+            }
+        }
+    }
+
+    fun stopProfileListener() {
+        profileListener?.remove()
+        profileListener = null
+    }
 
     // ── Register ─────────────────────────────────────────────────────────────
     suspend fun register(
@@ -47,6 +71,9 @@ object FakeRepository {
     ): Result<Unit> = runCatching {
         val result = auth.createUserWithEmailAndPassword(email.trim(), password).await()
         val uid    = result.user?.uid ?: error("No user ID returned")
+        // Upload images to Firebase Storage (no-op if already an https:// URL or empty)
+        val photoUrl = ImageUploader.uploadIfLocal(uid, photo, "photo.jpg")
+        val certUrl  = ImageUploader.uploadIfLocal(uid, certificate, "certificate.jpg")
         db.collection("providers").document(uid).set(hashMapOf<String, Any?>(
             "name"         to name.trim(),
             "phone"        to phone.trim(),
@@ -54,8 +81,8 @@ object FakeRepository {
             "nid"          to nid.trim(),
             "serviceType"  to serviceType,
             "baseFee"      to baseFee,
-            "photo"        to "",
-            "certificate"  to "",
+            "photo"        to photoUrl,
+            "certificate"  to certUrl,
             "availability" to "available",
             "rating"       to 4.5,
             "skillLevel"   to skillLevel,
@@ -65,9 +92,9 @@ object FakeRepository {
         )).await()
         provider = Provider(
             id = uid, name = name.trim(), phone = phone.trim(),
-            email = email.trim(), photo = photo,
+            email = email.trim(), photo = photoUrl,
             nid = nid.trim(), baseFee = baseFee,
-            serviceType = serviceType, certificate = certificate,
+            serviceType = serviceType, certificate = certUrl,
             skillLevel = skillLevel, isApproved = null
         )
         loggedIn = true
@@ -77,23 +104,30 @@ object FakeRepository {
     suspend fun login(email: String, password: String): Result<Unit> = runCatching {
         val uid = auth.signInWithEmailAndPassword(email.trim(), password).await()
             .user?.uid ?: error("No user ID returned")
-        loadProviderFromFirestore(uid)
+        if (!loadProviderFromFirestore(uid)) error("No provider account found for this user")
         loggedIn = true
         if (provider?.isApproved == true) startListeningToRequests()
+        startProfileListener()
     }
 
     // ── Session restore ───────────────────────────────────────────────────────
     suspend fun loadCurrentUser(): Boolean {
         val uid = auth.currentUser?.uid ?: return false
-        return runCatching {
-            loadProviderFromFirestore(uid)
+        return try {
+            if (!loadProviderFromFirestore(uid)) return false
             loggedIn = true
             if (provider?.isApproved == true) startListeningToRequests()
-        }.isSuccess
+            startProfileListener()
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 
-    private suspend fun loadProviderFromFirestore(uid: String) {
+    // Returns false when the providers/{uid} document does not exist (e.g. client user)
+    private suspend fun loadProviderFromFirestore(uid: String): Boolean {
         val doc = db.collection("providers").document(uid).get().await()
+        if (!doc.exists()) return false
         val approvedRaw = doc.get("isApproved")
         provider = Provider(
             id           = uid,
@@ -110,6 +144,7 @@ object FakeRepository {
             skillLevel   = doc.getString("skillLevel")   ?: "general",
             advance      = doc.getDouble("advance")      ?: 0.0,
             points       = (doc.getLong("points")        ?: 500).toInt(),
+            ratingCount  = (doc.getLong("completedJobs") ?: 0).toInt(),
             isApproved   = if (approvedRaw == null) null else approvedRaw as? Boolean,
             coveredAreas = (doc.get("coveredAreas") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
         )
@@ -117,6 +152,35 @@ object FakeRepository {
         if (doc.getLong("points") == null) {
             CoroutineScope(Dispatchers.IO).launch {
                 runCatching { db.collection("providers").document(uid).update(mapOf("points" to 500)).await() }
+            }
+        }
+        return true
+    }
+
+    // ── Save profile changes (uploads local images to Firebase Storage first) ──
+    fun saveProfile(
+        name: String, phone: String, email: String, nid: String,
+        photo: String, baseFee: Double, certificate: String
+    ) {
+        val uid = auth.currentUser?.uid ?: return
+        CoroutineScope(Dispatchers.IO).launch {
+            runCatching {
+                val photoUrl = ImageUploader.uploadIfLocal(uid, photo, "photo.jpg")
+                val certUrl  = ImageUploader.uploadIfLocal(uid, certificate, "certificate.jpg")
+                db.collection("providers").document(uid).update(mapOf(
+                    "name"        to name,
+                    "phone"       to phone,
+                    "email"       to email,
+                    "nid"         to nid,
+                    "photo"       to photoUrl,
+                    "baseFee"     to baseFee,
+                    "certificate" to certUrl
+                )).await()
+                // Reflect the Storage URLs locally so UI shows correct image
+                provider?.let { p ->
+                    p.photo       = photoUrl
+                    p.certificate = certUrl
+                }
             }
         }
     }
@@ -152,9 +216,12 @@ object FakeRepository {
                     val areaMatch = pAreas.isEmpty() ||
                         pAreas.any { it.equals(docArea, ignoreCase = true) }
 
+                    val minSkill  = doc.getString("minSkillLevel") ?: ""
+                    val skillMatch = minSkill.isEmpty() || meetsSkillRequirement(p.skillLevel, minSkill)
+
                     when {
                         status == "pending" && docProviderId.isEmpty() &&
-                        problemType in allowed && areaMatch -> {
+                        problemType in allowed && areaMatch && skillMatch -> {
                             newJobs[doc.id] = docToJob(doc, "pending")
                         }
                         docProviderId == uid -> {
@@ -188,6 +255,11 @@ object FakeRepository {
                 jobs.clear()
                 jobs.addAll(sorted)
             }
+    }
+
+    private fun meetsSkillRequirement(providerLevel: String, minRequired: String): Boolean {
+        val order = listOf("general", "professional", "expert")
+        return order.indexOf(providerLevel) >= order.indexOf(minRequired)
     }
 
     private fun docToJob(doc: DocumentSnapshot, localStatus: String) = Job(
@@ -368,6 +440,7 @@ object FakeRepository {
         auth.signOut()
         requestsListener?.remove();  requestsListener  = null
         approvalListener?.remove();  approvalListener  = null
+        profileListener?.remove();   profileListener   = null
         loggedIn = false
         provider = null
         jobs.clear()

@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.serviceapp.ui.theme.AppColors
 import com.example.serviceapp.utils.AppStrings
+import com.example.serviceapp.utils.verticalScrollbar
 import com.example.serviceapp.viewmodel.MainViewModel
 
 @Composable
@@ -51,11 +52,13 @@ fun DashboardScreen(vm: MainViewModel) {
     val pendingCount = vm.jobs.count { it.status == "pending" }
     val completedJobs = p.history.size
 
+    val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.Background)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
+            .verticalScrollbar(scrollState)
     ) {
         Box(
             modifier = Modifier
@@ -133,7 +136,7 @@ fun DashboardScreen(vm: MainViewModel) {
             Spacer(Modifier.height(10.dp))
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatCard(Modifier.weight(1f), AppStrings.rating, "%.1f".format(p.rating), Icons.Default.Star,
+                StatCard(Modifier.weight(1f), AppStrings.rating, if (p.ratingCount > 0) "%.1f".format(p.rating) else "—", Icons.Default.Star,
                     Color(0xFFFFF3E0), Color(0xFFFF8F00))
                 StatCard(Modifier.weight(1f), AppStrings.earnings, "৳ ${p.advance.toInt()}", Icons.Default.List,
                     AppColors.PrimaryContainer, AppColors.Primary)

@@ -21,5 +21,6 @@ data class Provider(
     var isApproved: Boolean? = null,   // null = pending, true = approved, false = rejected
     var skillLevel: String = "general",// "general" | "professional" | "expert"
     var points:     Int    = 500,       // deducted per job; bonuses for ratings
-    var coveredAreas: List<String> = emptyList()  // empty = serve all areas
+    var coveredAreas: List<String> = emptyList(),  // empty = serve all areas
+    var ratingCount: Int = 0                       // number of completed+rated jobs; 0 = no rating yet
 )

@@ -31,7 +31,6 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.example.serviceapp.navigation.Screen
 import com.example.serviceapp.ui.components.AreaPickerDialog
-import com.example.serviceapp.ui.components.OsmMapPickerDialog
 import com.example.serviceapp.utils.AppLanguage
 import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.utils.LocationHelper
@@ -55,8 +54,8 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
     var locationLng         by remember { mutableStateOf(0.0) }
     var minRating           by remember { mutableStateOf(0.0) }
     var maxPrice            by remember { mutableStateOf(0.0) }
+    var minSkillLevel       by remember { mutableStateOf("") }   // "" | "professional" | "expert"
     var locationLoading     by remember { mutableStateOf(false) }
-    var showMapPicker       by remember { mutableStateOf(false) }
     var showAreaPicker      by remember { mutableStateOf(false) }
     var selectedArea        by remember { mutableStateOf("") }
 
@@ -165,19 +164,6 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                 locationLat  = 0.0
                 locationLng  = 0.0
                 showAreaPicker = false
-            }
-        )
-    }
-
-    // OSM Map Picker dialog
-    if (showMapPicker) {
-        OsmMapPickerDialog(
-            onDismiss  = { showMapPicker = false },
-            onSelected = { addr, lat, lng ->
-                address     = addr
-                locationLat = lat
-                locationLng = lng
-                showMapPicker = false
             }
         )
     }
@@ -352,17 +338,6 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                                     Spacer(Modifier.width(3.dp))
                                     Text(if (isBn) "এলাকা" else "Area", fontSize = 11.sp)
                                 }
-                                OutlinedButton(
-                                    onClick = { showMapPicker = true },
-                                    shape = RoundedCornerShape(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = purple),
-                                    modifier = Modifier.height(32.dp)
-                                ) {
-                                    Icon(Icons.Default.Map, null, modifier = Modifier.size(13.dp))
-                                    Spacer(Modifier.width(3.dp))
-                                    Text(if (isBn) "ম্যাপ" else "Map", fontSize = 11.sp)
-                                }
                             }
                         }
                         Spacer(Modifier.height(10.dp))
@@ -421,6 +396,23 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                                 )
                             }
                         }
+                        Spacer(Modifier.height(10.dp))
+                        Text(if (isBn) "মিস্ত্রির দক্ষতা স্তর" else "Skill Level", fontSize = 12.sp, color = Color(0xFF757575))
+                        Spacer(Modifier.height(6.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(
+                                ""             to (if (isBn) "যেকোনো" else "Any"),
+                                "professional" to (if (isBn) "⚡ প্রফেশনাল+" else "⚡ Professional+"),
+                                "expert"       to (if (isBn) "🏆 এক্সপার্ট" else "🏆 Expert")
+                            ).forEach { (level, label) ->
+                                FilterChip(
+                                    selected = minSkillLevel == level,
+                                    onClick  = { minSkillLevel = level },
+                                    label    = { Text(label, fontSize = 12.sp) },
+                                    colors   = FilterChipDefaults.filterChipColors(selectedContainerColor = purple, selectedLabelColor = Color.White)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -430,7 +422,7 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
         Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp)) {
             Button(
                 onClick = {
-                    vm.createRequest(selectedCategoryId, description.trim(), address.trim(), minRating, maxPrice, selectedProblemType, locationLat, locationLng, selectedArea) {
+                    vm.createRequest(selectedCategoryId, description.trim(), address.trim(), minRating, maxPrice, selectedProblemType, locationLat, locationLng, selectedArea, minSkillLevel) {
                         nav.navigate(Screen.ClientDashboard.route) {
                             popUpTo(Screen.ClientDashboard.route) { inclusive = true }
                         }

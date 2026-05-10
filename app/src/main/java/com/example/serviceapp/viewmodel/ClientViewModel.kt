@@ -62,10 +62,11 @@ class ClientViewModel : ViewModel() {
                       problemType: String = "normal",
                       lat: Double = 0.0, lng: Double = 0.0,
                       area: String = "",
+                      minSkillLevel: String = "",
                       onSuccess: () -> Unit) {
         viewModelScope.launch {
             requestLoading = true
-            ClientRepository.createRequest(serviceType, description, address, minRating, maxPrice, problemType, lat, lng, area).fold(
+            ClientRepository.createRequest(serviceType, description, address, minRating, maxPrice, problemType, lat, lng, area, minSkillLevel).fold(
                 onSuccess = { requestLoading = false; onSuccess() },
                 onFailure = { requestLoading = false }
             )
@@ -94,6 +95,15 @@ class ClientViewModel : ViewModel() {
             actionLoading = true
             ClientRepository.disagreeWithProvider(requestId)
             actionLoading = false
+        }
+    }
+
+    fun completeJob(requestId: String, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            actionLoading = true
+            ClientRepository.completeJob(requestId)
+            actionLoading = false
+            onDone()
         }
     }
 
