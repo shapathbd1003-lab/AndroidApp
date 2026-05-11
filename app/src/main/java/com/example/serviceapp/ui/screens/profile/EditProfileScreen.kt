@@ -33,6 +33,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -349,32 +350,56 @@ fun EditProfileScreen(vm: MainViewModel, nav: NavController) {
 
                     Spacer(Modifier.height(24.dp))
 
+                    // Error banner
+                    if (vm.saveError.isNotBlank()) {
+                        Surface(
+                            color = AppColors.Error.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                vm.saveError,
+                                color = AppColors.Error, fontSize = 13.sp,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    }
+
                     Button(
                         onClick = {
-                            if (canSave) {
+                            if (canSave && !vm.saveLoading) {
                                 val newFee = baseFeeText.toDoubleOrNull() ?: p.baseFee
-                                p.name        = name.trim()
-                                p.phone       = phone.trim()
-                                p.email       = email.trim()
-                                p.nid         = nid.trim()
-                                p.photo       = photo
-                                p.baseFee     = newFee
-                                p.certificate = certificate
-                                vm.saveProfile(name.trim(), phone.trim(), email.trim(), nid.trim(), photo, newFee, certificate)
-                                nav.popBackStack()
+                                // Update local model immediately for responsive UI
+                                p.name    = name.trim()
+                                p.phone   = phone.trim()
+                                p.email   = email.trim()
+                                p.nid     = nid.trim()
+                                p.baseFee = newFee
+                                vm.saveProfile(
+                                    name.trim(), phone.trim(), email.trim(), nid.trim(),
+                                    photo, newFee, certificate
+                                ) {
+                                    // Navigate only after successful upload + Firestore write
+                                    nav.popBackStack()
+                                }
                             }
                         },
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(12.dp),
-                        enabled = canSave,
+                        enabled = canSave && !vm.saveLoading,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = AppColors.Primary,
                             disabledContainerColor = Color(0xFFBDBDBD)
                         )
                     ) {
-                        Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.height(8.dp))
-                        Text(AppStrings.saveChanges, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                        if (vm.saveLoading) {
+                            CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.height(8.dp))
+                            Text(AppStrings.saveChanges, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                        }
                     }
                 }
             }

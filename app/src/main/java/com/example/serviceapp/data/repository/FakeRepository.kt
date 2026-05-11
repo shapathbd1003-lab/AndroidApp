@@ -67,7 +67,8 @@ object FakeRepository {
         name: String, phone: String, email: String, password: String,
         nid: String, photo: String, baseFee: Double,
         serviceType: String, certificate: String,
-        skillLevel: String = "general"
+        skillLevel: String = "general",
+        coveredAreas: List<String> = emptyList()
     ): Result<Unit> = runCatching {
         val result = auth.createUserWithEmailAndPassword(email.trim(), password).await()
         val uid    = result.user?.uid ?: error("No user ID returned")
@@ -86,16 +87,18 @@ object FakeRepository {
             "availability" to "available",
             "rating"       to 4.5,
             "skillLevel"   to skillLevel,
-            "points"       to 500,
-            "isApproved"   to null,
-            "createdAt"    to FieldValue.serverTimestamp()
+            "points"        to 500,
+            "isApproved"    to null,
+            "coveredAreas"  to coveredAreas,
+            "createdAt"     to FieldValue.serverTimestamp()
         )).await()
         provider = Provider(
             id = uid, name = name.trim(), phone = phone.trim(),
             email = email.trim(), photo = photoUrl,
             nid = nid.trim(), baseFee = baseFee,
             serviceType = serviceType, certificate = certUrl,
-            skillLevel = skillLevel, isApproved = null
+            skillLevel = skillLevel, isApproved = null,
+            coveredAreas = coveredAreas
         )
         loggedIn = true
     }
@@ -158,30 +161,27 @@ object FakeRepository {
     }
 
     // ── Save profile changes (uploads local images to Firebase Storage first) ──
-    fun saveProfile(
+    suspend fun saveProfile(
         name: String, phone: String, email: String, nid: String,
         photo: String, baseFee: Double, certificate: String
-    ) {
-        val uid = auth.currentUser?.uid ?: return
-        CoroutineScope(Dispatchers.IO).launch {
-            runCatching {
-                val photoUrl = ImageUploader.uploadIfLocal(uid, photo, "photo.jpg")
-                val certUrl  = ImageUploader.uploadIfLocal(uid, certificate, "certificate.jpg")
-                db.collection("providers").document(uid).update(mapOf(
-                    "name"        to name,
-                    "phone"       to phone,
-                    "email"       to email,
-                    "nid"         to nid,
-                    "photo"       to photoUrl,
-                    "baseFee"     to baseFee,
-                    "certificate" to certUrl
-                )).await()
-                // Reflect the Storage URLs locally so UI shows correct image
-                provider?.let { p ->
-                    p.photo       = photoUrl
-                    p.certificate = certUrl
-                }
-            }
+    ): Result<Unit> = runCatching {
+        val uid = auth.currentUser?.uid ?: error("Not logged in")
+        // Upload images; non-local strings (presets, existing https URLs) pass through unchanged
+        val photoUrl = ImageUploader.uploadIfLocal(uid, photo, "photo.jpg")
+        val certUrl  = ImageUploader.uploadIfLocal(uid, certificate, "certificate.jpg")
+        db.collection("providers").document(uid).update(mapOf(
+            "name"        to name,
+            "phone"       to phone,
+            "email"       to email,
+            "nid"         to nid,
+            "photo"       to photoUrl,
+            "baseFee"     to baseFee,
+            "certificate" to certUrl
+        )).await()
+        // Reflect Storage URLs locally so UI shows correct image immediately
+        provider?.let { p ->
+            p.photo       = photoUrl
+            p.certificate = certUrl
         }
     }
 

@@ -19,11 +19,13 @@ class MainViewModel : ViewModel() {
     val loggedIn     get() = FakeRepository.loggedIn
     val serviceTypes get() = FakeRepository.serviceTypes
 
-    var loginLoading   by mutableStateOf(false); private set
-    var loginError     by mutableStateOf(""); private set
+    var loginLoading    by mutableStateOf(false); private set
+    var loginError      by mutableStateOf(""); private set
     var registerLoading by mutableStateOf(false); private set
-    var registerError  by mutableStateOf(""); private set
-    var sessionLoading by mutableStateOf(true);  private set
+    var registerError   by mutableStateOf(""); private set
+    var sessionLoading  by mutableStateOf(true);  private set
+    var saveLoading     by mutableStateOf(false); private set
+    var saveError       by mutableStateOf(""); private set
 
     // ── Auth ─────────────────────────────────────────────────────────────────
 
@@ -43,12 +45,13 @@ class MainViewModel : ViewModel() {
         nid: String, photo: String, baseFee: Double,
         serviceType: String, certificate: String,
         skillLevel: String = "general",
+        areas: List<String> = emptyList(),
         onSuccess: () -> Unit
     ) {
         viewModelScope.launch {
             registerLoading = true
             registerError   = ""
-            FakeRepository.register(name, phone, email, password, nid, photo, baseFee, serviceType, certificate, skillLevel).fold(
+            FakeRepository.register(name, phone, email, password, nid, photo, baseFee, serviceType, certificate, skillLevel, areas).fold(
                 onSuccess = { registerLoading = false; onSuccess() },
                 onFailure = { registerLoading = false; registerError = mapError(it) }
             )
@@ -107,10 +110,22 @@ class MainViewModel : ViewModel() {
     fun updateCoveredAreas(areas: List<String>)      = FakeRepository.updateCoveredAreas(areas)
     val coveredAreas get() = FakeRepository.provider?.coveredAreas ?: emptyList()
 
+    fun clearSaveError() { saveError = "" }
+
     fun saveProfile(
         name: String, phone: String, email: String, nid: String,
-        photo: String, baseFee: Double, certificate: String
-    ) = FakeRepository.saveProfile(name, phone, email, nid, photo, baseFee, certificate)
+        photo: String, baseFee: Double, certificate: String,
+        onSuccess: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            saveLoading = true
+            saveError   = ""
+            FakeRepository.saveProfile(name, phone, email, nid, photo, baseFee, certificate).fold(
+                onSuccess = { saveLoading = false; onSuccess() },
+                onFailure = { saveLoading = false; saveError = it.message ?: "Failed to save profile." }
+            )
+        }
+    }
 
     // ── Language ─────────────────────────────────────────────────────────────
 

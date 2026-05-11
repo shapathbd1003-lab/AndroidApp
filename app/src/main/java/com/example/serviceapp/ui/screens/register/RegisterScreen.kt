@@ -27,7 +27,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
@@ -65,9 +67,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.serviceapp.navigation.Screen
+import com.example.serviceapp.ui.components.AreaPickerDialog
 import com.example.serviceapp.ui.components.AvatarPicker
 import com.example.serviceapp.ui.components.presetAvatars
 import com.example.serviceapp.ui.theme.AppColors
+import com.example.serviceapp.utils.AppLanguage
 import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.viewmodel.MainViewModel
 
@@ -87,11 +91,25 @@ fun RegisterScreen(vm: MainViewModel, nav: NavController) {
     var selectedService by remember { mutableStateOf("") }
     var certificate     by remember { mutableStateOf("") }
     var skillLevel      by remember { mutableStateOf("general") }
+    var selectedAreas   by remember { mutableStateOf(emptySet<String>()) }
+    var showAreaPicker  by remember { mutableStateOf(false) }
     var localError      by remember { mutableStateOf("") }
+    val isBn = AppStrings.lang == AppLanguage.BN
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri -> uri?.let { selectedPhoto = it.toString() } }
+
+    if (showAreaPicker) {
+        AreaPickerDialog(
+            selected    = selectedAreas,
+            multiSelect = true,
+            accentColor = AppColors.Primary,
+            title       = if (isBn) "সেবা এলাকা বেছে নিন" else "Select Service Areas",
+            onDismiss   = { showAreaPicker = false },
+            onConfirm   = { areas -> selectedAreas = areas; showAreaPicker = false }
+        )
+    }
 
     val certLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -358,6 +376,72 @@ fun RegisterScreen(vm: MainViewModel, nav: NavController) {
                     Text(AppStrings.uploadCertificate, color = AppColors.Primary, fontSize = 13.sp)
                 }
 
+                Spacer(Modifier.height(20.dp))
+                HorizontalDivider(color = Color(0xFFF0F0F0))
+                Spacer(Modifier.height(20.dp))
+
+                // ── Preferred Service Areas ───────────────────────────────────
+                SectionHeader(if (isBn) "সেবা এলাকা (ঐচ্ছিক)" else "Service Areas (Optional)")
+                Text(
+                    if (isBn) "কোন কোন এলাকায় কাজ করবেন? খালি রাখলে সব এলাকার কাজ দেখাবে।"
+                    else "Which areas do you serve? Leave empty to see jobs from all areas.",
+                    fontSize = 12.sp, color = Color(0xFF9E9E9E)
+                )
+                Spacer(Modifier.height(10.dp))
+                if (selectedAreas.isNotEmpty()) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement   = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        selectedAreas.sorted().forEach { area ->
+                            androidx.compose.material3.InputChip(
+                                selected     = true,
+                                onClick      = { selectedAreas = selectedAreas - area },
+                                label        = { Text(area, fontSize = 12.sp) },
+                                trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(14.dp)) },
+                                colors = androidx.compose.material3.InputChipDefaults.inputChipColors(
+                                    selectedContainerColor = AppColors.PrimaryContainer,
+                                    selectedLabelColor     = AppColors.Primary
+                                )
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.Surface(
+                        shape    = RoundedCornerShape(10.dp),
+                        color    = AppColors.PrimaryContainer,
+                        modifier = Modifier.clickable { showAreaPicker = true }
+                    ) {
+                        Row(
+                            Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                            verticalAlignment     = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(Icons.Default.LocationOn, null, tint = AppColors.Primary, modifier = Modifier.size(16.dp))
+                            Text(
+                                if (isBn) "+ এলাকা যোগ করুন" else "+ Add Areas",
+                                fontSize = 13.sp, color = AppColors.Primary, fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                    if (selectedAreas.isNotEmpty()) {
+                        androidx.compose.material3.Surface(
+                            shape    = RoundedCornerShape(10.dp),
+                            color    = AppColors.Error.copy(alpha = 0.1f),
+                            modifier = Modifier.clickable { selectedAreas = emptySet() }
+                        ) {
+                            Text(
+                                if (isBn) "সব বাতিল" else "Clear All",
+                                fontSize = 12.sp, color = AppColors.Error,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                            )
+                        }
+                    }
+                }
+
                 Spacer(Modifier.height(28.dp))
 
                 if (localError.isNotEmpty() || vm.registerError.isNotEmpty()) {
@@ -381,7 +465,7 @@ fun RegisterScreen(vm: MainViewModel, nav: NavController) {
                             else -> vm.registerAsync(
                                 name.trim(), phone.trim(), email.trim(), password,
                                 nid.trim(), selectedPhoto, baseFee, selectedService, certificate,
-                                skillLevel
+                                skillLevel, selectedAreas.toList()
                             ) {
                                 nav.navigate(Screen.Pending.route) {
                                     popUpTo(Screen.Register.route) { inclusive = true }

@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlin.math.roundToInt
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,9 +39,7 @@ import com.example.serviceapp.utils.ServiceData
 import com.example.serviceapp.viewmodel.ClientViewModel
 import kotlinx.coroutines.launch
 
-private val RATING_FILTERS_DATA = listOf(0.0, 3.5, 4.0, 4.5)
 private val PRICE_FILTERS_DATA  = listOf(0.0, 500.0, 800.0, 1200.0)
-private fun ratingLabel(v: Double) = if (v == 0.0) AppStrings.anyFilter else "${"%.1f".format(v)}+"
 private fun priceLabel(v: Double)  = if (v == 0.0) AppStrings.anyFilter else "৳${v.toInt()}"
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -373,14 +372,63 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                     Column(Modifier.padding(16.dp)) {
                         Text(AppStrings.providerFilter, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242))
                         Spacer(Modifier.height(10.dp))
-                        Text(AppStrings.minRatingLabel, fontSize = 12.sp, color = Color(0xFF757575))
-                        Spacer(Modifier.height(6.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            RATING_FILTERS_DATA.forEach { v ->
-                                FilterChip(
-                                    selected = minRating == v, onClick = { minRating = v },
-                                    label = { Text(ratingLabel(v), fontSize = 12.sp) },
-                                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = purple, selectedLabelColor = Color.White)
+                        // ── Rating slider (0.0 → 5.0 in 0.5 steps) ──────────────
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(AppStrings.minRatingLabel, fontSize = 12.sp, color = Color(0xFF757575))
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (minRating > 0.0) purple else Color(0xFFF3E5F5)
+                            ) {
+                                Text(
+                                    if (minRating == 0.0) AppStrings.anyFilter else "${"%.1f".format(minRating)}⭐+",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (minRating > 0.0) Color.White else Color(0xFF424242),
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("0", fontSize = 11.sp, color = Color(0xFF9E9E9E))
+                            Slider(
+                                value       = minRating.toFloat(),
+                                onValueChange = { raw ->
+                                    // snap to nearest 0.5
+                                    minRating = ((raw * 2).roundToInt() / 2.0)
+                                },
+                                valueRange  = 0f..5f,
+                                steps       = 9,   // 10 intervals → 0, 0.5, 1.0 … 5.0
+                                modifier    = Modifier.weight(1f).padding(horizontal = 4.dp),
+                                colors      = SliderDefaults.colors(
+                                    activeTrackColor   = purple,
+                                    thumbColor         = purple,
+                                    inactiveTrackColor = purple.copy(alpha = 0.2f)
+                                )
+                            )
+                            Text("5", fontSize = 11.sp, color = Color(0xFF9E9E9E))
+                        }
+                        // Star row
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            (1..5).forEach { i ->
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = when {
+                                        i <= minRating.toInt()          -> Color(0xFFFFA000)
+                                        i == minRating.toInt() + 1
+                                            && minRating % 1.0 >= 0.5  -> Color(0xFFFFCC80)
+                                        else                            -> Color(0xFFE0E0E0)
+                                    },
+                                    modifier = Modifier.size(22.dp)
                                 )
                             }
                         }
