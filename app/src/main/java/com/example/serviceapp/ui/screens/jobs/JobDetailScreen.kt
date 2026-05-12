@@ -46,13 +46,47 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
     // Log every recompose so we can see status + button changes in Logcat
     android.util.Log.d("JobFlow", "JobDetailScreen recompose: id=${id.takeLast(6)} status=${job.status} hasPoints=${vm.hasEnoughPoints}")
 
-    var showPriceDialog by remember { mutableStateOf(false) }
-    var customPrice     by remember { mutableStateOf(vm.provider?.baseFee?.toString() ?: "") }
-    var actionLoading   by remember { mutableStateOf(false) }
-    // Reset loading when Firestore listener updates the job status
+    var showPriceDialog  by remember { mutableStateOf(false) }
+    var showAcceptDialog by remember { mutableStateOf(false) }
+    var customPrice      by remember { mutableStateOf(vm.provider?.baseFee?.toString() ?: "") }
+    var actionLoading    by remember { mutableStateOf(false) }
     LaunchedEffect(job.status) { actionLoading = false }
 
-    // Price negotiation dialog
+    // Dialog: set price when accepting a new job
+    if (showAcceptDialog) {
+        AlertDialog(
+            onDismissRequest = { showAcceptDialog = false },
+            title   = { Text(AppStrings.setJobPrice) },
+            text    = {
+                androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                    androidx.compose.material3.Text(
+                        "বেস ফি: ৳${vm.provider?.baseFee?.toInt()}  •  অতিরিক্ত মূল্য থাকলে নিচে দিন",
+                        fontSize = 12.sp, color = AppColors.TextSecondary
+                    )
+                    OutlinedTextField(
+                        value = customPrice,
+                        onValueChange = { customPrice = it },
+                        label = { Text("৳ ${AppStrings.agreedPriceLabel}") },
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val price = customPrice.toDoubleOrNull() ?: (vm.provider?.baseFee ?: 300.0)
+                    actionLoading = true
+                    vm.accept(job, price)
+                    showAcceptDialog = false
+                    nav.popBackStack()
+                }) { Text(AppStrings.acceptJob) }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showAcceptDialog = false }) { Text(AppStrings.cancelBtn) }
+            }
+        )
+    }
+
+    // Dialog: update price after client confirmed (agreed state)
     if (showPriceDialog) {
         AlertDialog(
             onDismissRequest = { showPriceDialog = false },
@@ -140,8 +174,8 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                     }
                     Spacer(Modifier.height(14.dp))
                     InfoRow(Icons.Default.LocationOn, AppStrings.address, job.address, Color(0xFF1565C0))
-                    // Contact only revealed once provider is physically on the way
-                    if (job.status in listOf("on_the_way", "arrived", "working", "finished") && job.phone.isNotBlank()) {
+                    // Contact revealed once client has confirmed the provider (agreed and beyond)
+                    if (job.status in listOf("agreed", "on_the_way", "arrived", "working", "finished") && job.phone.isNotBlank()) {
                         Spacer(Modifier.height(10.dp))
                         InfoRow(Icons.Default.Phone, AppStrings.contact, job.phone, Color(0xFF6A1B9A))
                     }
@@ -194,14 +228,16 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                         }
                     } else {
                         Button(
-                            onClick = { actionLoading = true; vm.accept(job); nav.popBackStack() },
+                            onClick = {
+                                customPrice = vm.provider?.baseFee?.toString() ?: ""
+                                showAcceptDialog = true
+                            },
                             modifier = Modifier.fillMaxWidth().height(54.dp),
                             enabled = !actionLoading,
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
                         ) {
-                            if (actionLoading) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-                            else Text(AppStrings.acceptJob, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                            Text(AppStrings.acceptJob, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }

@@ -162,11 +162,14 @@ fun JobCard(
                     }
                 }
             }
-            Spacer(Modifier.height(4.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Phone, null, tint = Color(0xFF9E9E9E), modifier = Modifier.size(15.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(job.phone, fontSize = 12.sp, color = AppColors.TextSecondary)
+            // Phone revealed only once the provider is physically on the way
+            if (job.phone.isNotBlank() && job.status in listOf("on_the_way", "arrived", "working", "finished")) {
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Phone, null, tint = Color(0xFF9E9E9E), modifier = Modifier.size(15.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text(job.phone, fontSize = 12.sp, color = AppColors.TextSecondary)
+                }
             }
 
             Spacer(Modifier.height(12.dp))

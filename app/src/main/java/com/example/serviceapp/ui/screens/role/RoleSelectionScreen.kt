@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.serviceapp.navigation.PendingNavigation
 import com.example.serviceapp.navigation.Screen
 import com.example.serviceapp.ui.theme.AppColors
 import com.example.serviceapp.utils.AppLanguage
@@ -47,9 +48,17 @@ fun RoleSelectionScreen(vm: MainViewModel, cvm: ClientViewModel, nav: NavControl
             } else {
                 cvm.loadCurrentSession { clientLoaded ->
                     if (clientLoaded) {
-                        nav.navigate(Screen.ClientDashboard.route) { popUpTo(0) { inclusive = true } }
+                        // If a notification brought us here, go directly to that request
+                        val pendingId = PendingNavigation.clientRequestId
+                        PendingNavigation.clientRequestId = null
+                        val dest = if (pendingId != null)
+                            Screen.ClientRequestDetail.createRoute(pendingId)
+                        else
+                            Screen.ClientDashboard.route
+                        nav.navigate(dest) { popUpTo(0) { inclusive = true } }
+                    } else {
+                        sessionChecked = true
                     }
-                    sessionChecked = true
                 }
             }
         }

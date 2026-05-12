@@ -32,6 +32,7 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.example.serviceapp.navigation.Screen
 import com.example.serviceapp.ui.components.AreaPickerDialog
+import com.example.serviceapp.utils.AreaData
 import com.example.serviceapp.utils.AppLanguage
 import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.utils.LocationHelper
@@ -49,7 +50,6 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
     var address             by remember { mutableStateOf("") }
     var locationLat         by remember { mutableStateOf(0.0) }
     var locationLng         by remember { mutableStateOf(0.0) }
-    var minRating           by remember { mutableStateOf(0.0) }
     var maxPrice            by remember { mutableStateOf(0.0) }
     var minSkillLevel       by remember { mutableStateOf("") }   // "" | "professional" | "expert"
     var locationLoading     by remember { mutableStateOf(false) }
@@ -94,7 +94,16 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                       perms[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         if (granted) {
             locationLoading = true
-            scope.launch { val r = LocationHelper.getLocationResult(context); if (r != null) { address = r.address; locationLat = r.lat; locationLng = r.lng }; locationLoading = false }
+            scope.launch {
+                val r = LocationHelper.getLocationResult(context)
+                if (r != null) {
+                    address = r.address; locationLat = r.lat; locationLng = r.lng
+                    // Auto-match area name from the GPS address string
+                    val matched = AreaData.allAreas.find { area -> r.address.contains(area, ignoreCase = true) }
+                    if (matched != null) selectedArea = matched
+                }
+                locationLoading = false
+            }
         }
     }
 
@@ -116,7 +125,16 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
         val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
         if (fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED) {
             locationLoading = true
-            scope.launch { val r = LocationHelper.getLocationResult(context); if (r != null) { address = r.address; locationLat = r.lat; locationLng = r.lng }; locationLoading = false }
+            scope.launch {
+                val r = LocationHelper.getLocationResult(context)
+                if (r != null) {
+                    address = r.address; locationLat = r.lat; locationLng = r.lng
+                    // Auto-match area name from the GPS address string
+                    val matched = AreaData.allAreas.find { area -> r.address.contains(area, ignoreCase = true) }
+                    if (matched != null) selectedArea = matched
+                }
+                locationLoading = false
+            }
         } else {
             locationPermLauncher.launch(arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,
@@ -370,67 +388,6 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                     Column(Modifier.padding(16.dp)) {
                         Text(AppStrings.providerFilter, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF424242))
                         Spacer(Modifier.height(10.dp))
-                        // ── Rating slider (0.0 → 5.0 in 0.5 steps) ──────────────
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(AppStrings.minRatingLabel, fontSize = 12.sp, color = Color(0xFF757575))
-                            Surface(
-                                shape = RoundedCornerShape(20.dp),
-                                color = if (minRating > 0.0) purple else Color(0xFFF3E5F5)
-                            ) {
-                                Text(
-                                    if (minRating == 0.0) AppStrings.anyFilter else "${"%.1f".format(minRating)}⭐+",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (minRating > 0.0) Color.White else Color(0xFF424242),
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("0", fontSize = 11.sp, color = Color(0xFF9E9E9E))
-                            Slider(
-                                value       = minRating.toFloat(),
-                                onValueChange = { raw ->
-                                    // snap to nearest 0.5
-                                    minRating = ((raw * 2).roundToInt() / 2.0)
-                                },
-                                valueRange  = 0f..5f,
-                                steps       = 9,   // 10 intervals → 0, 0.5, 1.0 … 5.0
-                                modifier    = Modifier.weight(1f).padding(horizontal = 4.dp),
-                                colors      = SliderDefaults.colors(
-                                    activeTrackColor   = purple,
-                                    thumbColor         = purple,
-                                    inactiveTrackColor = purple.copy(alpha = 0.2f)
-                                )
-                            )
-                            Text("5", fontSize = 11.sp, color = Color(0xFF9E9E9E))
-                        }
-                        // Star row
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            (1..5).forEach { i ->
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = null,
-                                    tint = when {
-                                        i <= minRating.toInt()          -> Color(0xFFFFA000)
-                                        i == minRating.toInt() + 1
-                                            && minRating % 1.0 >= 0.5  -> Color(0xFFFFCC80)
-                                        else                            -> Color(0xFFE0E0E0)
-                                    },
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                        }
-                        Spacer(Modifier.height(14.dp))
                         // ── Max price slider (0 → 3000 BDT in 100-step increments) ──
                         Row(
                             Modifier.fillMaxWidth(),
@@ -496,7 +453,7 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
         Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp)) {
             Button(
                 onClick = {
-                    vm.createRequest(selectedCategoryId, description.trim(), address.trim(), minRating, maxPrice, selectedProblemType, locationLat, locationLng, selectedArea, minSkillLevel) {
+                    vm.createRequest(selectedCategoryId, description.trim(), address.trim(), 0.0, maxPrice, selectedProblemType, locationLat, locationLng, selectedArea, minSkillLevel) {
                         nav.navigate(Screen.ClientDashboard.route) {
                             popUpTo(Screen.ClientDashboard.route) { inclusive = true }
                         }

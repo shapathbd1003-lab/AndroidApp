@@ -1,6 +1,7 @@
 package com.example.serviceapp
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -12,6 +13,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.serviceapp.navigation.NavGraph
+import com.example.serviceapp.navigation.PendingNavigation
 import com.example.serviceapp.utils.NotificationHelper
 import com.example.serviceapp.viewmodel.ClientViewModel
 import com.example.serviceapp.viewmodel.MainViewModel
@@ -24,6 +26,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Store any request ID passed via notification tap so RoleSelectionScreen can deep-link
+        intent?.getStringExtra("requestId")?.let { PendingNavigation.clientRequestId = it }
 
         NotificationHelper.init(this)
 
@@ -45,5 +50,11 @@ class MainActivity : ComponentActivity() {
             val cvm: ClientViewModel = viewModel()
             NavGraph(vm, cvm)
         }
+    }
+
+    // Handles notification tap when the activity is already running (SINGLE_TOP)
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        intent.getStringExtra("requestId")?.let { PendingNavigation.clientRequestId = it }
     }
 }

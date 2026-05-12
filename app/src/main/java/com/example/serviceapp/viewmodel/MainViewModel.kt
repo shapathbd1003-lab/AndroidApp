@@ -99,7 +99,7 @@ class MainViewModel : ViewModel() {
 
     fun addTestPoints(amount: Int)                    = FakeRepository.addPoints(amount)
     fun clearHistory()                               = FakeRepository.clearHistory()
-    fun accept(job: Job): Boolean                    = FakeRepository.accept(job)
+    fun accept(job: Job, proposedPrice: Double = 0.0): Boolean = FakeRepository.accept(job, proposedPrice)
     fun markOnTheWay(jobId: String)                  = FakeRepository.markOnTheWay(jobId)
     fun markArrived(jobId: String)                   = FakeRepository.markArrived(jobId)
     fun markWorking(jobId: String)                   = FakeRepository.markWorking(jobId)

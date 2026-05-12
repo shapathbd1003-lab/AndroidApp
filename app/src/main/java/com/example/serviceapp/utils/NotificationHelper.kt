@@ -33,17 +33,19 @@ object NotificationHelper {
         manager.createNotificationChannel(channel)
     }
 
-    fun showProviderFoundNotification(providerName: String, serviceType: String, baseFee: Double, rating: Double) {
+    fun showProviderFoundNotification(
+        requestId: String,
+        providerName: String, serviceType: String, baseFee: Double, rating: Double
+    ) {
         val ctx = appContext ?: return
         val manager = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        // FLAG_ACTIVITY_SINGLE_TOP keeps the existing activity alive when it is already
-        // in the foreground, so the user stays on whichever screen they were on.
         val intent = Intent(ctx, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra("requestId", requestId)
         }
         val pendingIntent = PendingIntent.getActivity(
-            ctx, 0, intent,
+            ctx, requestId.hashCode(), intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 

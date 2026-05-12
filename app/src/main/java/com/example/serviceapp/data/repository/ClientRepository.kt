@@ -204,6 +204,7 @@ object ClientRepository {
                     if (status == "awaiting_approval" && rid !in notifiedRequests) {
                         notifiedRequests.add(rid)
                         NotificationHelper.showProviderFoundNotification(
+                            requestId    = rid,
                             providerName = doc.getString("providerName") ?: "মিস্ত্রি",
                             serviceType  = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
                             baseFee      = doc.getDouble("providerBaseFee") ?: 0.0,

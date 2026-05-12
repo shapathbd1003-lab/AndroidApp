@@ -215,15 +215,25 @@ object FakeRepository {
                     val problemType   = doc.getString("problemType") ?: "normal"
                     val docArea       = doc.getString("area")        ?: ""
 
-                    val areaMatch = pAreas.isEmpty() ||
+                    // Area: empty docArea means client didn't restrict → all providers can see
+                    val areaMatch = pAreas.isEmpty() || docArea.isEmpty() ||
                         pAreas.any { it.equals(docArea, ignoreCase = true) }
 
-                    val minSkill  = doc.getString("minSkillLevel") ?: ""
+                    val minSkill   = doc.getString("minSkillLevel") ?: ""
                     val skillMatch = minSkill.isEmpty() || meetsSkillRequirement(p.skillLevel, minSkill)
+
+                    // Price: provider's base fee must not exceed client's max
+                    val reqMaxPrice  = doc.getDouble("maxPrice") ?: 0.0
+                    val priceMatch   = reqMaxPrice <= 0.0 || p.baseFee <= reqMaxPrice
+
+                    // Rating: provider's rating must meet client's minimum
+                    val reqMinRating = doc.getDouble("minRating") ?: 0.0
+                    val ratingMatch  = reqMinRating <= 0.0 || p.rating >= reqMinRating
 
                     when {
                         status == "pending" && docProviderId.isEmpty() &&
-                        problemType in allowed && areaMatch && skillMatch -> {
+                        problemType in allowed && areaMatch && skillMatch &&
+                        priceMatch && ratingMatch -> {
                             newJobs[doc.id] = docToJob(doc, "pending")
                         }
                         docProviderId == uid -> {
@@ -316,11 +326,10 @@ object FakeRepository {
     }
 
     // ── Job actions — write to Firestore, listener rebuilds the UI ────────────
-    fun accept(job: Job): Boolean {
+    fun accept(job: Job, proposedPrice: Double = 0.0): Boolean {
         val p   = provider ?: return false
         val uid = auth.currentUser?.uid ?: return false
-        // Points are NOT deducted here; they are deducted when the provider marks "On the Way"
-        if (p.points < 400) return false  // still gate the accept so UI shows correct warning
+        if (p.points < 400) return false
 
         val docRef = db.collection("requests").document(job.id)
         CoroutineScope(Dispatchers.IO).launch {
@@ -330,6 +339,7 @@ object FakeRepository {
                     if (snap.getString("status") != "pending") {
                         throw IllegalStateException("Job is no longer pending")
                     }
+                    val effectivePrice = if (proposedPrice > 0) proposedPrice else p.baseFee
                     tx.update(docRef, mapOf(
                         "status"          to "awaiting_approval",
                         "providerId"      to uid,
@@ -337,6 +347,7 @@ object FakeRepository {
                         "providerPhone"   to p.phone,
                         "providerRating"  to p.rating,
                         "providerBaseFee" to p.baseFee,
+                        "agreedPrice"     to effectivePrice,   // provider's proposed price
                         "acceptedAt"      to FieldValue.serverTimestamp()
                     ))
                 }.await()
