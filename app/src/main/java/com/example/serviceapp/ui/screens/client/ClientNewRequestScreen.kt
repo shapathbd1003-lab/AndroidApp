@@ -39,8 +39,6 @@ import com.example.serviceapp.utils.ServiceData
 import com.example.serviceapp.viewmodel.ClientViewModel
 import kotlinx.coroutines.launch
 
-private val PRICE_FILTERS_DATA  = listOf(0.0, 500.0, 800.0, 1200.0)
-private fun priceLabel(v: Double)  = if (v == 0.0) AppStrings.anyFilter else "৳${v.toInt()}"
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -432,17 +430,45 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                                 )
                             }
                         }
-                        Spacer(Modifier.height(10.dp))
-                        Text(AppStrings.maxFeeLabel, fontSize = 12.sp, color = Color(0xFF757575))
-                        Spacer(Modifier.height(6.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            PRICE_FILTERS_DATA.forEach { v ->
-                                FilterChip(
-                                    selected = maxPrice == v, onClick = { maxPrice = v },
-                                    label = { Text(priceLabel(v), fontSize = 12.sp) },
-                                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = purple, selectedLabelColor = Color.White)
+                        Spacer(Modifier.height(14.dp))
+                        // ── Max price slider (0 → 3000 BDT in 100-step increments) ──
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(AppStrings.maxFeeLabel, fontSize = 12.sp, color = Color(0xFF757575))
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (maxPrice > 0.0) purple else Color(0xFFF3E5F5)
+                            ) {
+                                Text(
+                                    if (maxPrice == 0.0) AppStrings.anyFilter else "৳${maxPrice.toInt()}",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (maxPrice > 0.0) Color.White else Color(0xFF424242),
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                                 )
                             }
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("0", fontSize = 11.sp, color = Color(0xFF9E9E9E))
+                            Slider(
+                                value       = maxPrice.toFloat(),
+                                onValueChange = { raw ->
+                                    maxPrice = ((raw / 100).roundToInt() * 100.0)
+                                },
+                                valueRange  = 0f..3000f,
+                                steps       = 29,  // 100 BDT per step → 0, 100 … 3000
+                                modifier    = Modifier.weight(1f).padding(horizontal = 4.dp),
+                                colors      = SliderDefaults.colors(
+                                    activeTrackColor   = purple,
+                                    thumbColor         = purple,
+                                    inactiveTrackColor = purple.copy(alpha = 0.2f)
+                                )
+                            )
+                            Text("৳3000", fontSize = 11.sp, color = Color(0xFF9E9E9E))
                         }
                         Spacer(Modifier.height(10.dp))
                         Text(if (isBn) "মিস্ত্রির দক্ষতা স্তর" else "Skill Level", fontSize = 12.sp, color = Color(0xFF757575))

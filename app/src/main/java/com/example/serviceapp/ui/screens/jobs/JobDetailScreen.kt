@@ -140,8 +140,11 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                     }
                     Spacer(Modifier.height(14.dp))
                     InfoRow(Icons.Default.LocationOn, AppStrings.address, job.address, Color(0xFF1565C0))
-                    Spacer(Modifier.height(10.dp))
-                    InfoRow(Icons.Default.Phone, AppStrings.contact, job.phone, Color(0xFF6A1B9A))
+                    // Contact only revealed once provider is physically on the way
+                    if (job.status in listOf("on_the_way", "arrived", "working", "finished") && job.phone.isNotBlank()) {
+                        Spacer(Modifier.height(10.dp))
+                        InfoRow(Icons.Default.Phone, AppStrings.contact, job.phone, Color(0xFF6A1B9A))
+                    }
                 }
             }
 
@@ -206,15 +209,22 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                     Text(AppStrings.awaitingClientApproval, color = Color(0xFFE65100), fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(14.dp))
                 }
-                "agreed" -> Button(
-                    onClick = { actionLoading = true; vm.markOnTheWay(job.id) },
-                    modifier = Modifier.fillMaxWidth().height(54.dp),
-                    enabled = !actionLoading,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
-                ) {
-                    if (actionLoading) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-                    else Text(AppStrings.markOnTheWay, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                "agreed" -> if (!vm.hasEnoughPoints) {
+                    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), color = Color(0xFFFFEBEE)) {
+                        Text(AppStrings.insufficientPoints, color = Color(0xFFC62828), fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(14.dp))
+                    }
+                } else {
+                    Button(
+                        onClick = { actionLoading = true; vm.markOnTheWay(job.id) },
+                        modifier = Modifier.fillMaxWidth().height(54.dp),
+                        enabled = !actionLoading,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
+                    ) {
+                        if (actionLoading) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                        else Text(AppStrings.markOnTheWay, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    }
                 }
                 "on_the_way" -> Button(
                     onClick = { actionLoading = true; vm.markArrived(job.id) },

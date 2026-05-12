@@ -1,9 +1,12 @@
 package com.example.serviceapp.ui.screens.dashboard
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,14 +22,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,21 +46,43 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.serviceapp.navigation.Screen
+import com.example.serviceapp.ui.components.AreaPickerDialog
 import com.example.serviceapp.ui.theme.AppColors
+import com.example.serviceapp.utils.AppLanguage
 import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.utils.verticalScrollbar
 import com.example.serviceapp.viewmodel.MainViewModel
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun DashboardScreen(vm: MainViewModel) {
+fun DashboardScreen(vm: MainViewModel, nav: NavController) {
 
     val p = vm.provider ?: return
-    // Jobs the provider has accepted and is currently active on
+    val isBn = AppStrings.lang == AppLanguage.BN
+
     val liveJobCount = vm.jobs.count { it.status in listOf("awaiting", "agreed", "on_the_way", "arrived", "working") }
-    // New pending jobs available to accept
     val pendingCount = vm.jobs.count { it.status == "pending" }
     val completedJobs = p.history.size
+
+    // The one job the provider is actively working on (highest priority status first)
+    val activeJob = vm.jobs.firstOrNull {
+        it.status in listOf("working", "arrived", "on_the_way", "agreed", "awaiting")
+    }
+
+    var showAreaPicker by remember { mutableStateOf(false) }
+    if (showAreaPicker) {
+        AreaPickerDialog(
+            selected    = p.coveredAreas.toSet(),
+            multiSelect = true,
+            accentColor = AppColors.Primary,
+            title       = if (isBn) "সেবা এলাকা বেছে নিন" else "Select Service Areas",
+            onDismiss   = { showAreaPicker = false },
+            onConfirm   = { areas -> vm.updateCoveredAreas(areas.toList()); showAreaPicker = false }
+        )
+    }
 
     val scrollState = rememberScrollState()
     Column(
@@ -150,6 +182,100 @@ fun DashboardScreen(vm: MainViewModel) {
                 InfoTile(Modifier.weight(1f), AppStrings.liveJobs,  "$liveJobCount",  AppColors.PrimaryContainer, AppColors.Primary)
                 InfoTile(Modifier.weight(1f), AppStrings.completed,  "$completedJobs", Color(0xFFE8F5E9),           AppColors.Success)
                 InfoTile(Modifier.weight(1f), AppStrings.availableJobs, "$pendingCount", Color(0xFFFFF3E0),          Color(0xFFE65100))
+            }
+
+            // ── Active job card ───────────────────────────────────────────────
+            if (activeJob != null) {
+                Spacer(Modifier.height(16.dp))
+                val (statusBg, statusFg, statusEmoji, statusLabel) = when (activeJob.status) {
+                    "working"    -> listOf(Color(0xFFFFF3E0), Color(0xFFE65100), "🔧", if (isBn) "কাজ চলছে" else "Working")
+                    "arrived"    -> listOf(Color(0xFFE8F5E9), Color(0xFF2E7D32), "🏠", if (isBn) "পৌঁছে গেছে" else "Arrived")
+                    "on_the_way" -> listOf(Color(0xFFE8EAF6), Color(0xFF1A237E), "🛵", if (isBn) "যাচ্ছে" else "On the Way")
+                    "agreed"     -> listOf(Color(0xFFE3F2FD), Color(0xFF1565C0), "✅", if (isBn) "নিশ্চিত" else "Confirmed")
+                    else         -> listOf(Color(0xFFFFF8E1), Color(0xFFE65100), "⏳", if (isBn) "অপেক্ষায়" else "Awaiting")
+                }
+                Text(
+                    if (isBn) "সক্রিয় কাজ" else "Active Job",
+                    fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary
+                )
+                Spacer(Modifier.height(6.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth().clickable { nav.navigate(Screen.JobDetail.createRoute(activeJob.id)) },
+                    shape    = RoundedCornerShape(16.dp),
+                    colors   = CardDefaults.cardColors(containerColor = AppColors.Surface),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Box(
+                            Modifier.size(52.dp).background(statusBg as Color, RoundedCornerShape(12.dp)),
+                            contentAlignment = Alignment.Center
+                        ) { Text(statusEmoji as String, fontSize = 24.sp) }
+                        Column(Modifier.weight(1f)) {
+                            Text(activeJob.description, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
+                            Spacer(Modifier.height(2.dp))
+                            Text(activeJob.address, fontSize = 12.sp, color = AppColors.TextSecondary, maxLines = 1)
+                        }
+                        Surface(shape = RoundedCornerShape(20.dp), color = statusBg) {
+                            Text(
+                                statusLabel as String, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                                color = statusFg as Color,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ── Service area card ─────────────────────────────────────────────
+            Spacer(Modifier.height(16.dp))
+            Card(
+                Modifier.fillMaxWidth(),
+                shape  = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = AppColors.Surface),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Column(Modifier.padding(14.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.LocationOn, null, tint = AppColors.Primary, modifier = Modifier.size(18.dp))
+                            Text(
+                                if (isBn) "সেবা এলাকা" else "Service Areas",
+                                fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary
+                            )
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = AppColors.PrimaryContainer,
+                            modifier = Modifier.clickable { showAreaPicker = true }
+                        ) {
+                            Text(
+                                if (isBn) "+ সম্পাদনা" else "+ Edit",
+                                fontSize = 12.sp, color = AppColors.Primary, fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
+                            )
+                        }
+                    }
+                    if (p.coveredAreas.isEmpty()) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            if (isBn) "সব এলাকায় কাজ করছেন" else "Serving all areas",
+                            fontSize = 12.sp, color = AppColors.TextSecondary
+                        )
+                    } else {
+                        Spacer(Modifier.height(8.dp))
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            p.coveredAreas.forEach { area ->
+                                Surface(shape = RoundedCornerShape(20.dp), color = AppColors.PrimaryContainer) {
+                                    Text(area, fontSize = 11.sp, color = AppColors.Primary, modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp))
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             // ── Test button: add points quickly ──────────────────────────────

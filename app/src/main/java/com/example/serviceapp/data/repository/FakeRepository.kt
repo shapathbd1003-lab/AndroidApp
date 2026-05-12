@@ -37,6 +37,8 @@ object FakeRepository {
     private var requestsListener: ListenerRegistration? = null
     private var approvalListener: ListenerRegistration? = null
     private var profileListener:  ListenerRegistration? = null
+    // Tracks job IDs the provider has cleared from history so the listener won't re-add them
+    private val deletedHistory    = mutableSetOf<String>()
 
     val serviceTypes get() = ServiceData.categories.map { it.id }
 
@@ -275,6 +277,12 @@ object FakeRepository {
     )
 
     private fun addToHistory(doc: DocumentSnapshot) {
+        // Skip jobs the provider has explicitly deleted from their history
+        if (doc.id in deletedHistory) return
+        if (doc.getBoolean("providerDeleted") == true) {
+            deletedHistory.add(doc.id)  // sync Firestore flag to in-memory set
+            return
+        }
         val prov = provider ?: return
         if (prov.history.any { it.id == doc.id }) return
         val desc         = AppStrings.serviceTypeName(doc.getString("serviceType") ?: "")
@@ -311,18 +319,12 @@ object FakeRepository {
     fun accept(job: Job): Boolean {
         val p   = provider ?: return false
         val uid = auth.currentUser?.uid ?: return false
-        if (p.points < 400) return false
-
-        p.points -= 400
-        pointsState = p.points
+        // Points are NOT deducted here; they are deducted when the provider marks "On the Way"
+        if (p.points < 400) return false  // still gate the accept so UI shows correct warning
 
         val docRef = db.collection("requests").document(job.id)
-
         CoroutineScope(Dispatchers.IO).launch {
-            val result = runCatching {
-                // Transaction guarantees the job is still "pending" at the server
-                // before writing. This prevents a stale-cache Accept from resetting
-                // a job that has already advanced to on_the_way / arrived / etc.
+            runCatching {
                 db.runTransaction { tx ->
                     val snap = tx.get(docRef)
                     if (snap.getString("status") != "pending") {
@@ -338,21 +340,37 @@ object FakeRepository {
                         "acceptedAt"      to FieldValue.serverTimestamp()
                     ))
                 }.await()
-                db.collection("providers").document(uid)
-                    .update(mapOf("points" to p.points)).await()
-            }
-            if (result.isFailure) {
-                // Transaction failed (job was not pending) — restore deducted points
-                CoroutineScope(Dispatchers.Main).launch {
-                    p.points += 400
-                    pointsState = p.points
-                }
             }
         }
         return true
     }
 
-    fun markOnTheWay(jobId: String) = writeStatus(jobId, "on_the_way", "onTheWayAt")
+    fun markOnTheWay(jobId: String) {
+        val p   = provider ?: return
+        val uid = auth.currentUser?.uid ?: return
+        if (p.points < 400) return  // not enough points to start the trip
+
+        // Deduct points the moment the provider commits to traveling
+        p.points   -= 400
+        pointsState = p.points
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = runCatching {
+                db.collection("requests").document(jobId).update(mapOf(
+                    "status"     to "on_the_way",
+                    "onTheWayAt" to FieldValue.serverTimestamp()
+                )).await()
+                db.collection("providers").document(uid)
+                    .update(mapOf("points" to p.points)).await()
+            }
+            if (result.isFailure) {
+                CoroutineScope(Dispatchers.Main).launch {
+                    p.points   += 400
+                    pointsState = p.points
+                }
+            }
+        }
+    }
     fun markArrived(jobId: String)  = writeStatus(jobId, "arrived",    "arrivedAt")
     fun markWorking(jobId: String)  = writeStatus(jobId, "working",    "workingAt")
 
@@ -430,9 +448,23 @@ object FakeRepository {
     }
 
     fun clearHistory() {
+        val uid = auth.currentUser?.uid ?: return
         provider?.let { p ->
+            val ids = p.history.map { it.id }
+            ids.forEach { deletedHistory.add(it) }  // block re-add immediately
             p.history.clear()
             p.advance = 0.0
+            // Persist the flag so history doesn't return after app restart
+            CoroutineScope(Dispatchers.IO).launch {
+                runCatching {
+                    val batch = db.batch()
+                    ids.forEach { id ->
+                        batch.update(db.collection("requests").document(id), mapOf("providerDeleted" to true))
+                    }
+                    batch.commit().await()
+                    db.collection("providers").document(uid).update("advance", 0.0).await()
+                }
+            }
         }
     }
 
@@ -444,5 +476,6 @@ object FakeRepository {
         loggedIn = false
         provider = null
         jobs.clear()
+        deletedHistory.clear()
     }
 }

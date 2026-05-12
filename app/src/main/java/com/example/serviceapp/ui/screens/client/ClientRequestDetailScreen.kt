@@ -261,7 +261,9 @@ private fun ProviderInfoCard(req: ServiceRequest) {
             Text(AppStrings.assignedProvider, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF6A1B9A))
             HorizontalDivider(color = Color(0xFF6A1B9A).copy(alpha = 0.2f))
             InfoRow("👤 ${AppStrings.providerName}",    req.providerName)
-            InfoRow("📞 ${AppStrings.providerPhone}",    req.providerPhone)
+            // Phone is shown only while the provider is actively traveling / working
+            if (req.status in listOf("on_the_way", "arrived", "working") && req.providerPhone.isNotBlank())
+                InfoRow("📞 ${AppStrings.providerPhone}", req.providerPhone)
             InfoRow("⭐ ${AppStrings.providerRatingLbl}", "%.1f / 5.0".format(req.providerRating))
             if (req.agreedPrice > 0)
                 InfoRow("💰 ${AppStrings.agreedPriceLabel}", "৳ ${req.agreedPrice.toInt()}")
