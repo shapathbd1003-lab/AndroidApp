@@ -182,18 +182,22 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                 }
             }
 
-            // Price card — only before client confirms (agreed state); hidden once provider is on the way
+            // Price card — shown when client confirmed; provider can still adjust before going on the way
             if (job.status == "agreed") {
+                val displayPrice = if (job.agreedPrice > 0) job.agreedPrice else (vm.provider?.baseFee ?: 0.0)
                 Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = AppColors.PrimaryContainer)) {
                     Row(Modifier.fillMaxWidth().padding(14.dp),
                         horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column {
                             Text(AppStrings.agreedPriceLabel, fontSize = 12.sp, color = AppColors.TextSecondary)
-                            Text("৳ ${(vm.provider?.baseFee ?: 0.0).toInt()} ${AppStrings.perService}",
+                            Text("৳ ${displayPrice.toInt()} ${AppStrings.perService}",
                                 fontSize = 16.sp, fontWeight = FontWeight.Bold, color = AppColors.Primary)
                         }
-                        OutlinedButton(onClick = { showPriceDialog = true }, shape = RoundedCornerShape(8.dp)) {
+                        OutlinedButton(onClick = {
+                            customPrice = displayPrice.toString()
+                            showPriceDialog = true
+                        }, shape = RoundedCornerShape(8.dp)) {
                             Text(AppStrings.setJobPrice, fontSize = 12.sp)
                         }
                     }

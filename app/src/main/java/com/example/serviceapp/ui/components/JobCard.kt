@@ -208,14 +208,21 @@ fun JobCard(
                         Text(AppStrings.awaitingClientApproval, fontSize = 12.sp, color = Color(0xFFE65100),
                             fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
                     }
-                    isAgreed && onMarkOnTheWay != null -> Button(
-                        onClick = { if (!actionLoading) { actionLoading = true; onMarkOnTheWay() } },
-                        enabled = !actionLoading,
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
-                    ) {
-                        if (actionLoading) CircularProgressIndicator(Modifier.size(15.dp), color = Color.White, strokeWidth = 2.dp)
-                        else Text(AppStrings.markOnTheWay, fontSize = 13.sp)
+                    isAgreed && onMarkOnTheWay != null -> if (!hasPoints) {
+                        Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFFFEBEE)) {
+                            Text(AppStrings.insufficientPoints, fontSize = 12.sp, color = Color(0xFFC62828),
+                                fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+                        }
+                    } else {
+                        Button(
+                            onClick = { if (!actionLoading) { actionLoading = true; onMarkOnTheWay() } },
+                            enabled = !actionLoading,
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
+                        ) {
+                            if (actionLoading) CircularProgressIndicator(Modifier.size(15.dp), color = Color.White, strokeWidth = 2.dp)
+                            else Text(AppStrings.markOnTheWay, fontSize = 13.sp)
+                        }
                     }
                     isOnTheWay && onMarkArrived != null -> Button(
                         onClick = { if (!actionLoading) { actionLoading = true; onMarkArrived() } },

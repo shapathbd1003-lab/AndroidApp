@@ -242,7 +242,8 @@ private fun ProviderApprovalCard(req: ServiceRequest) {
             if (completedJobs >= 0) {
                 InfoRow(AppStrings.completedJobsLabel, "$completedJobs ${AppStrings.jobs}")
             }
-            InfoRow("💰 ${AppStrings.providerFeeLbl}", "৳ ${req.providerBaseFee.toInt()} ${AppStrings.perService}")
+            val proposedPrice = if (req.agreedPrice > 0) req.agreedPrice else req.providerBaseFee
+            InfoRow("💰 ${AppStrings.providerFeeLbl}", "৳ ${proposedPrice.toInt()} ${AppStrings.perService}")
             Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFFE8F5E9)) {
                 Text(
                     AppStrings.hireQuestion,

@@ -282,8 +282,9 @@ object FakeRepository {
         overview    = doc.getString("description") ?: "",
         problemType = doc.getString("problemType") ?: "normal",
         status      = localStatus,
-        lat         = doc.getDouble("lat") ?: 0.0,
-        lng         = doc.getDouble("lng") ?: 0.0
+        lat         = doc.getDouble("lat")          ?: 0.0,
+        lng         = doc.getDouble("lng")          ?: 0.0,
+        agreedPrice = doc.getDouble("agreedPrice")  ?: 0.0
     )
 
     private fun addToHistory(doc: DocumentSnapshot) {

@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.serviceapp.data.model.ServiceRequest
+import com.example.serviceapp.navigation.PendingNavigation
 import com.example.serviceapp.navigation.Screen
 import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.viewmodel.ClientViewModel
@@ -30,10 +31,17 @@ import com.example.serviceapp.viewmodel.ClientViewModel
 fun ClientDashboardScreen(vm: ClientViewModel, nav: NavController) {
     val purple = Color(0xFF6A1B9A)
 
-    // Safety net: restart the listener if it somehow wasn't started
-    // (e.g., rapid navigation before the session-restore coroutine completed)
     LaunchedEffect(vm.loggedIn) {
         if (vm.loggedIn) vm.ensureListening()
+    }
+
+    // If app was already running when a notification was tapped, navigate directly
+    LaunchedEffect(Unit) {
+        val pending = PendingNavigation.clientRequestId
+        if (pending != null) {
+            PendingNavigation.clientRequestId = null
+            nav.navigate(Screen.ClientRequestDetail.createRoute(pending))
+        }
     }
 
     Column(
@@ -157,7 +165,13 @@ private fun RequestCard(req: ServiceRequest, onClick: () -> Unit) {
                 Spacer(Modifier.height(8.dp))
                 HorizontalDivider()
                 Spacer(Modifier.height(8.dp))
-                Text("${AppStrings.providerLabel}: ${req.providerName} • ${req.providerPhone}", fontSize = 12.sp, color = Color(0xFF1565C0), fontWeight = FontWeight.SemiBold)
+                // Phone only shown once provider is physically traveling
+                val showPhone = req.status in listOf("on_the_way","arrived","working","finished","completed")
+                val providerText = if (showPhone && req.providerPhone.isNotBlank())
+                    "${AppStrings.providerLabel}: ${req.providerName} • ${req.providerPhone}"
+                else
+                    "${AppStrings.providerLabel}: ${req.providerName}"
+                Text(providerText, fontSize = 12.sp, color = Color(0xFF1565C0), fontWeight = FontWeight.SemiBold)
             }
             if ((req.status == "finished" || req.status == "completed") && req.rating > 0) {
                 Spacer(Modifier.height(6.dp))
