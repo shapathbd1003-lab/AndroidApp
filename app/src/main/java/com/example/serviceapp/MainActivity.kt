@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.serviceapp.navigation.NavGraph
 import com.example.serviceapp.navigation.PendingNavigation
+import com.example.serviceapp.utils.ImageUploader
 import com.example.serviceapp.utils.NotificationHelper
 import com.example.serviceapp.viewmodel.ClientViewModel
 import com.example.serviceapp.viewmodel.MainViewModel
@@ -27,10 +28,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Store any request ID passed via notification tap so RoleSelectionScreen can deep-link
         intent?.getStringExtra("requestId")?.let { PendingNavigation.clientRequestId = it }
 
         NotificationHelper.init(this)
+        ImageUploader.init(this)
 
         // Request notification permission on Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
