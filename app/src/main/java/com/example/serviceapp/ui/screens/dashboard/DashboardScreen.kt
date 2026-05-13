@@ -167,13 +167,12 @@ fun DashboardScreen(vm: MainViewModel, nav: NavController) {
             Text(AppStrings.overview, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
             Spacer(Modifier.height(10.dp))
 
+            val totalEarnings = p.history.sumOf { it.earning }.toInt()
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 StatCard(Modifier.weight(1f), AppStrings.rating, if (p.ratingCount > 0) "%.1f".format(p.rating) else "—", Icons.Default.Star,
                     Color(0xFFFFF3E0), Color(0xFFFF8F00))
-                StatCard(Modifier.weight(1f), AppStrings.earnings, "৳ ${p.advance.toInt()}", Icons.Default.List,
+                StatCard(Modifier.weight(1f), AppStrings.earnings, "৳ $totalEarnings", Icons.Default.List,
                     AppColors.PrimaryContainer, AppColors.Primary)
-                StatCard(Modifier.weight(1f), AppStrings.due, "৳ ${p.due.toInt()}", Icons.Default.List,
-                    Color(0xFFFFEBEE), AppColors.Error)
             }
 
             Spacer(Modifier.height(12.dp))
@@ -253,7 +252,7 @@ fun DashboardScreen(vm: MainViewModel, nav: NavController) {
                             modifier = Modifier.clickable { showAreaPicker = true }
                         ) {
                             Text(
-                                if (isBn) "+ সম্পাদনা" else "+ Edit",
+                                if (isBn) "কাজের এলাকা ঠিক করুন" else "Set Service Area",
                                 fontSize = 12.sp, color = AppColors.Primary, fontWeight = FontWeight.SemiBold,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
                             )

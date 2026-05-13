@@ -117,9 +117,7 @@ object ClientRepository {
     }
 
     suspend fun cancelRequest(requestId: String): Result<Unit> = runCatching {
-        db.collection("requests").document(requestId).update(
-            mapOf("status" to "cancelled", "cancelledAt" to FieldValue.serverTimestamp())
-        ).await()
+        db.collection("requests").document(requestId).delete().await()
     }
 
     // ── Mark job done without rating (client confirms work is finished) ────────

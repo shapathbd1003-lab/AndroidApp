@@ -51,7 +51,6 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
     var locationLat         by remember { mutableStateOf(0.0) }
     var locationLng         by remember { mutableStateOf(0.0) }
     var maxPrice            by remember { mutableStateOf(0.0) }
-    var minSkillLevel       by remember { mutableStateOf("") }   // "" | "professional" | "expert"
     var locationLoading     by remember { mutableStateOf(false) }
     var showAreaPicker      by remember { mutableStateOf(false) }
     var selectedArea        by remember { mutableStateOf("") }
@@ -427,23 +426,6 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                             )
                             Text("৳3000", fontSize = 11.sp, color = Color(0xFF9E9E9E))
                         }
-                        Spacer(Modifier.height(10.dp))
-                        Text(if (isBn) "মিস্ত্রির দক্ষতা স্তর" else "Skill Level", fontSize = 12.sp, color = Color(0xFF757575))
-                        Spacer(Modifier.height(6.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf(
-                                ""             to (if (isBn) "যেকোনো" else "Any"),
-                                "professional" to (if (isBn) "⚡ প্রফেশনাল+" else "⚡ Professional+"),
-                                "expert"       to (if (isBn) "🏆 এক্সপার্ট" else "🏆 Expert")
-                            ).forEach { (level, label) ->
-                                FilterChip(
-                                    selected = minSkillLevel == level,
-                                    onClick  = { minSkillLevel = level },
-                                    label    = { Text(label, fontSize = 12.sp) },
-                                    colors   = FilterChipDefaults.filterChipColors(selectedContainerColor = purple, selectedLabelColor = Color.White)
-                                )
-                            }
-                        }
                     }
                 }
             }
@@ -453,7 +435,7 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
         Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp)) {
             Button(
                 onClick = {
-                    vm.createRequest(selectedCategoryId, description.trim(), address.trim(), 0.0, maxPrice, selectedProblemType, locationLat, locationLng, selectedArea, minSkillLevel) {
+                    vm.createRequest(selectedCategoryId, description.trim(), address.trim(), 0.0, maxPrice, selectedProblemType, locationLat, locationLng, selectedArea) {
                         nav.navigate(Screen.ClientDashboard.route) {
                             popUpTo(Screen.ClientDashboard.route) { inclusive = true }
                         }

@@ -1,6 +1,14 @@
 package com.example.serviceapp.navigation
 
-/** Holds a request ID to navigate to after session restore (e.g. from a notification tap). */
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+
+/**
+ * Reactive singleton so Compose screens can observe when a notification
+ * sets a pending request ID and navigate immediately, even when the app
+ * is already running and MainActivity.onNewIntent fires.
+ */
 object PendingNavigation {
-    var clientRequestId: String? = null
+    var clientRequestId: String? by mutableStateOf(null)
 }

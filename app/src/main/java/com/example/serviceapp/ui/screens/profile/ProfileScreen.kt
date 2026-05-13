@@ -161,9 +161,9 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
 
         Column(Modifier.padding(16.dp)) {
 
+            val totalEarnings = p.history.sumOf { it.earning }.toInt()
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatTile(Modifier.weight(1f), AppStrings.earnings, "৳ ${p.advance.toInt()}", AppColors.Primary, AppColors.PrimaryContainer)
-                StatTile(Modifier.weight(1f), AppStrings.due, "৳ ${p.due.toInt()}", AppColors.Error, Color(0xFFFFEBEE))
+                StatTile(Modifier.weight(1f), AppStrings.earnings, "৳ $totalEarnings", AppColors.Primary, AppColors.PrimaryContainer)
                 StatTile(Modifier.weight(1f), AppStrings.jobs, "${p.history.size}", Color(0xFF1565C0), Color(0xFFE3F2FD))
             }
 

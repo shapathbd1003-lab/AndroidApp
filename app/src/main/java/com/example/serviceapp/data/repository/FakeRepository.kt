@@ -147,7 +147,7 @@ object FakeRepository {
             availability = doc.getString("availability") ?: "available",
             rating       = doc.getDouble("rating")       ?: 4.5,
             skillLevel   = doc.getString("skillLevel")   ?: "general",
-            advance      = doc.getDouble("advance")      ?: 0.0,
+            advance      = 0.0,   // rebuilt from history via addToHistory; never load stale Firestore value
             points       = (doc.getLong("points")        ?: 500).toInt(),
             ratingCount  = (doc.getLong("completedJobs") ?: 0).toInt(),
             isApproved   = if (approvedRaw == null) null else approvedRaw as? Boolean,
@@ -274,18 +274,26 @@ object FakeRepository {
         return order.indexOf(providerLevel) >= order.indexOf(minRequired)
     }
 
-    private fun docToJob(doc: DocumentSnapshot, localStatus: String) = Job(
-        id          = doc.id,
-        description = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
-        address     = doc.getString("address")     ?: "",
-        phone       = doc.getString("clientPhone") ?: "",
-        overview    = doc.getString("description") ?: "",
-        problemType = doc.getString("problemType") ?: "normal",
-        status      = localStatus,
-        lat         = doc.getDouble("lat")          ?: 0.0,
-        lng         = doc.getDouble("lng")          ?: 0.0,
-        agreedPrice = doc.getDouble("agreedPrice")  ?: 0.0
-    )
+    private fun docToJob(doc: DocumentSnapshot, localStatus: String): Job {
+        val ts = doc.getTimestamp("createdAt")
+        val formattedTime = ts?.let {
+            val sdf = java.text.SimpleDateFormat("dd MMM yyyy, hh:mm a", java.util.Locale.getDefault())
+            sdf.format(java.util.Date(it.seconds * 1000))
+        } ?: ""
+        return Job(
+            id          = doc.id,
+            description = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
+            address     = doc.getString("address")     ?: "",
+            phone       = doc.getString("clientPhone") ?: "",
+            overview    = doc.getString("description") ?: "",
+            problemType = doc.getString("problemType") ?: "normal",
+            status      = localStatus,
+            lat         = doc.getDouble("lat")          ?: 0.0,
+            lng         = doc.getDouble("lng")          ?: 0.0,
+            agreedPrice = doc.getDouble("agreedPrice")  ?: 0.0,
+            createdAt   = formattedTime
+        )
+    }
 
     private fun addToHistory(doc: DocumentSnapshot) {
         // Skip jobs the provider has explicitly deleted from their history

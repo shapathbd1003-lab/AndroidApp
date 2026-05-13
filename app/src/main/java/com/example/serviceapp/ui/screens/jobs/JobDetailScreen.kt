@@ -172,6 +172,14 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                             }
                         }
                     }
+                    if (job.createdAt.isNotBlank()) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "🕐 ${job.createdAt}",
+                            fontSize = 11.sp,
+                            color = AppColors.TextSecondary
+                        )
+                    }
                     Spacer(Modifier.height(14.dp))
                     InfoRow(Icons.Default.LocationOn, AppStrings.address, job.address, Color(0xFF1565C0))
                     // Contact revealed once client has confirmed the provider (agreed and beyond)

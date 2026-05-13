@@ -35,12 +35,13 @@ fun ClientDashboardScreen(vm: ClientViewModel, nav: NavController) {
         if (vm.loggedIn) vm.ensureListening()
     }
 
-    // If app was already running when a notification was tapped, navigate directly
-    LaunchedEffect(Unit) {
-        val pending = PendingNavigation.clientRequestId
-        if (pending != null) {
+    // Reacts every time PendingNavigation.clientRequestId is set (mutableStateOf),
+    // covering both cold-start (RoleSelectionScreen path) and hot-start (onNewIntent path).
+    val pendingId = PendingNavigation.clientRequestId
+    LaunchedEffect(pendingId) {
+        if (pendingId != null) {
             PendingNavigation.clientRequestId = null
-            nav.navigate(Screen.ClientRequestDetail.createRoute(pending))
+            nav.navigate(Screen.ClientRequestDetail.createRoute(pendingId))
         }
     }
 

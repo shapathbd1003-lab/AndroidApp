@@ -11,5 +11,6 @@ data class Job(
     val lat:         Double = 0.0,
     val lng:         Double = 0.0,
     var distanceKm:  Double = -1.0,       // -1 = unknown
-    val agreedPrice: Double = 0.0         // provider's proposed/agreed price; 0 = not set
+    val agreedPrice: Double = 0.0,        // provider's proposed/agreed price; 0 = not set
+    val createdAt:  String = ""           // formatted creation time
 )
