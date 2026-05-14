@@ -218,12 +218,15 @@ fun DashboardScreen(vm: MainViewModel, nav: NavController) {
                             Spacer(Modifier.height(2.dp))
                             Text(activeJob.address, fontSize = 12.sp, color = AppColors.TextSecondary, maxLines = 1)
                         }
-                        Surface(shape = RoundedCornerShape(20.dp), color = statusBg) {
-                            Text(
-                                statusLabel as String, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
-                                color = statusFg as Color,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                            )
+                        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Surface(shape = RoundedCornerShape(20.dp), color = statusBg) {
+                                Text(
+                                    statusLabel as String, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                                    color = statusFg as Color,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                )
+                            }
+                            Text("→ ${if (isBn) "বিস্তারিত" else "Details"}", fontSize = 11.sp, color = AppColors.Primary)
                         }
                     }
                 }

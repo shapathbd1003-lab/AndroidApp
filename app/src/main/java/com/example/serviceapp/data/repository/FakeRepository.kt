@@ -38,7 +38,8 @@ object FakeRepository {
     private var approvalListener: ListenerRegistration? = null
     private var profileListener:  ListenerRegistration? = null
     // Tracks job IDs the provider has cleared from history so the listener won't re-add them
-    private val deletedHistory    = mutableSetOf<String>()
+    private val deletedHistory       = mutableSetOf<String>()
+    private val notifiedJobAccepted  = mutableSetOf<String>() // track "client accepted" notifications
 
     val serviceTypes get() = ServiceData.categories.map { it.id }
 
@@ -239,7 +240,15 @@ object FakeRepository {
                         docProviderId == uid -> {
                             val localStatus = when (status) {
                                 "awaiting_approval" -> "awaiting"
-                                "accepted"          -> "agreed"
+                                "accepted"          -> {
+                                    // Client just confirmed — notify provider once
+                                    if (doc.id !in notifiedJobAccepted) {
+                                        notifiedJobAccepted.add(doc.id)
+                                        val svcType = AppStrings.serviceTypeName(doc.getString("serviceType") ?: "")
+                                        com.example.serviceapp.utils.NotificationHelper.showJobAcceptedByClientNotification(svcType)
+                                    }
+                                    "agreed"
+                                }
                                 "on_the_way"        -> "on_the_way"
                                 "arrived"           -> "arrived"
                                 "working"           -> "working"
@@ -277,7 +286,7 @@ object FakeRepository {
     private fun docToJob(doc: DocumentSnapshot, localStatus: String): Job {
         val ts = doc.getTimestamp("createdAt")
         val formattedTime = ts?.let {
-            val sdf = java.text.SimpleDateFormat("dd MMM yyyy, hh:mm a", java.util.Locale.getDefault())
+            val sdf = java.text.SimpleDateFormat("dd MMM, HH:mm", java.util.Locale.ENGLISH)
             sdf.format(java.util.Date(it.seconds * 1000))
         } ?: ""
         return Job(
@@ -307,9 +316,15 @@ object FakeRepository {
         val desc         = AppStrings.serviceTypeName(doc.getString("serviceType") ?: "")
         val fee          = doc.getDouble("agreedPrice")?.takeIf { it > 0 } ?: prov.baseFee
         val clientName   = doc.getString("clientName")  ?: ""
+        val address      = doc.getString("address")     ?: ""
         val clientRating = (doc.getLong("rating") ?: 0).toInt()
+        val doneAt       = doc.getTimestamp("completedAt") ?: doc.getTimestamp("finishedAt")
+        val formattedDate = doneAt?.let {
+            java.text.SimpleDateFormat("dd MMM, HH:mm", java.util.Locale.ENGLISH)
+                .format(java.util.Date(it.seconds * 1000))
+        } ?: ""
         prov.advance += fee
-        prov.history.add(ServiceHistory(doc.id, desc, fee, clientName, clientRating))
+        prov.history.add(ServiceHistory(doc.id, desc, fee, clientName, address, formattedDate, clientRating))
         val uid = auth.currentUser?.uid ?: return
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
@@ -497,5 +512,6 @@ object FakeRepository {
         provider = null
         jobs.clear()
         deletedHistory.clear()
+        notifiedJobAccepted.clear()
     }
 }

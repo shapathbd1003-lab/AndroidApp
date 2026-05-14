@@ -65,6 +65,19 @@ object NotificationHelper {
         manager.notify(notificationId++, notification)
     }
 
+    fun showJobAcceptedByClientNotification(serviceType: String) {
+        val ctx = appContext ?: return
+        val manager = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notification = NotificationCompat.Builder(ctx, CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle("✅ Client accepted your proposal!")
+            .setContentText("Your $serviceType request has been confirmed. Get ready to go!")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+        manager.notify(notificationId++, notification)
+    }
+
     fun showRequestCancelledNotification() {
         val ctx = appContext ?: return
         val manager = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

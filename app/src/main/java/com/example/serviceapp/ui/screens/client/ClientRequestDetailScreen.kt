@@ -23,9 +23,11 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.serviceapp.data.model.ServiceRequest
 import com.example.serviceapp.navigation.Screen
+import com.example.serviceapp.ui.components.AreaPickerDialog
 import com.example.serviceapp.ui.components.EmbeddedMap
 import com.example.serviceapp.ui.components.OpenMapsButton
 import com.example.serviceapp.utils.AppStrings
+import com.example.serviceapp.utils.ServiceData
 import com.example.serviceapp.viewmodel.ClientViewModel
 
 @Composable
@@ -36,42 +38,98 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
     var serviceRating   by remember { mutableStateOf(0) }
     var reviewText      by remember { mutableStateOf("") }
     val selectedRating  = providerRating
-    var showEditDialog  by remember { mutableStateOf(false) }
-    var editAddress     by remember { mutableStateOf(request?.address ?: "") }
-    var editDescription by remember { mutableStateOf(request?.description ?: "") }
+    var showEditDialog   by remember { mutableStateOf(false) }
+    var showAreaPicker2  by remember { mutableStateOf(false) }
+    var editServiceType  by remember { mutableStateOf(request?.serviceType ?: "") }
+    var editAddress      by remember { mutableStateOf(request?.address ?: "") }
+    var editArea         by remember { mutableStateOf(request?.area ?: "") }
+    var editDescription  by remember { mutableStateOf(request?.description ?: "") }
+
+    if (showAreaPicker2) {
+        AreaPickerDialog(
+            selected    = if (editArea.isNotBlank()) setOf(editArea) else emptySet(),
+            multiSelect = false,
+            accentColor = purple,
+            title       = AppStrings.addressHint,
+            onDismiss   = { showAreaPicker2 = false },
+            onConfirm   = { picked ->
+                editArea    = picked.firstOrNull() ?: ""
+                if (editArea.isNotBlank()) editAddress = editArea
+                showAreaPicker2 = false
+            }
+        )
+    }
 
     if (showEditDialog) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showEditDialog = false },
-            title = { androidx.compose.material3.Text(AppStrings.editProfile) },
+            title = { androidx.compose.material3.Text(AppStrings.editProfile.replace("Profile","Request").replace("প্রোফাইল","অনুরোধ")) },
             text  = {
-                androidx.compose.foundation.layout.Column(
+                androidx.compose.foundation.lazy.LazyColumn(
                     verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)
                 ) {
-                    OutlinedTextField(
-                        value = editAddress, onValueChange = { editAddress = it },
-                        label = { androidx.compose.material3.Text(AppStrings.addressLabel) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = purple, cursorColor = purple),
-                        singleLine = true
-                    )
-                    OutlinedTextField(
-                        value = editDescription, onValueChange = { editDescription = it },
-                        label = { androidx.compose.material3.Text(AppStrings.problemDescLabel) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
-                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = purple, cursorColor = purple),
-                        maxLines = 3
-                    )
+                    // Service type chips
+                    item {
+                        androidx.compose.material3.Text(AppStrings.serviceTypeLabel, fontSize = 12.sp, color = Color(0xFF757575))
+                        androidx.compose.foundation.layout.Spacer(Modifier.height(6.dp))
+                        androidx.compose.foundation.layout.FlowRow(
+                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+                            verticalArrangement   = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)
+                        ) {
+                            ServiceData.categories.forEach { cat ->
+                                val isBn = AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN
+                                FilterChip(
+                                    selected = editServiceType == cat.id,
+                                    onClick  = { editServiceType = cat.id },
+                                    label    = { androidx.compose.material3.Text(if (isBn) cat.bnLabel else cat.enLabel, fontSize = 11.sp) },
+                                    colors   = FilterChipDefaults.filterChipColors(selectedContainerColor = purple, selectedLabelColor = Color.White)
+                                )
+                            }
+                        }
+                    }
+                    item {
+                        OutlinedTextField(
+                            value = editDescription, onValueChange = { editDescription = it },
+                            label = { androidx.compose.material3.Text(AppStrings.problemDescLabel) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = purple, cursorColor = purple),
+                            maxLines = 3
+                        )
+                    }
+                    item {
+                        OutlinedTextField(
+                            value = editAddress, onValueChange = { editAddress = it; if (it != editArea) editArea = "" },
+                            label = { androidx.compose.material3.Text(AppStrings.addressLabel) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = purple, cursorColor = purple),
+                            singleLine = true
+                        )
+                    }
+                    item {
+                        OutlinedButton(
+                            onClick = { showAreaPicker2 = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, purple)
+                        ) {
+                            androidx.compose.material3.Text(
+                                if (editArea.isNotBlank()) "📍 $editArea" else AppStrings.addressHint,
+                                color = purple, fontSize = 13.sp
+                            )
+                        }
+                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        if (request != null) vm.updateRequest(request.id, editAddress.trim(), editDescription.trim())
+                        if (request != null)
+                            vm.updateRequest(request.id, editServiceType, editDescription.trim(), editAddress.trim(), editArea)
                         showEditDialog = false
                     },
+                    enabled = editServiceType.isNotBlank() && editAddress.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(containerColor = purple)
                 ) { androidx.compose.material3.Text(AppStrings.saveChanges) }
             },
@@ -142,9 +200,11 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                 "pending" -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedButton(
                         onClick = {
-                            editAddress     = request.address
-                            editDescription = request.description
-                            showEditDialog  = true
+                            editServiceType  = request.serviceType
+                            editAddress      = request.address
+                            editArea         = request.area
+                            editDescription  = request.description
+                            showEditDialog   = true
                         },
                         modifier = Modifier.weight(1f).height(52.dp),
                         enabled = !vm.actionLoading,

@@ -162,6 +162,10 @@ private fun RequestCard(req: ServiceRequest, onClick: () -> Unit) {
             Text(req.description, fontSize = 13.sp, color = Color(0xFF757575), maxLines = 2)
             Spacer(Modifier.height(4.dp))
             Text("📍 ${req.address}", fontSize = 12.sp, color = Color(0xFF9E9E9E))
+            if (req.createdAt.isNotBlank()) {
+                Spacer(Modifier.height(2.dp))
+                Text("🕐 ${req.createdAt}", fontSize = 11.sp, color = Color(0xFF9E9E9E))
+            }
             if (req.providerName.isNotEmpty() && req.status !in listOf("pending","awaiting_approval","cancelled","cancelled_by_client","cancelled_by_provider")) {
                 Spacer(Modifier.height(8.dp))
                 HorizontalDivider()

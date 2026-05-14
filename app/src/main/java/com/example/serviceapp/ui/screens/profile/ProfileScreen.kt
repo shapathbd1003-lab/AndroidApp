@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -77,6 +78,7 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
     val reviews             = remember { mutableStateListOf<ReviewItem>() }
     var showDeleteConfirm  by remember { mutableStateOf(false) }
     val clientRatings       = remember { androidx.compose.runtime.mutableStateMapOf<String, Int>() }
+    var selectedHistory    by remember { mutableStateOf<com.example.serviceapp.data.model.ServiceHistory?>(null) }
     val scrollState         = rememberScrollState()
     LaunchedEffect(p.id) {
         FirebaseFirestore.getInstance()
@@ -133,18 +135,20 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                 // Skill level badge
                 SkillBadge(p.skillLevel)
                 Spacer(Modifier.height(8.dp))
-                if (p.ratingCount > 0) {
+                // Use reviews.average() so profile header and graph always show the same number
+                val headerRating = if (reviews.isNotEmpty()) reviews.map { it.rating }.average() else p.rating
+                if (p.ratingCount > 0 || reviews.isNotEmpty()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         repeat(5) { i ->
                             Icon(
                                 Icons.Default.Star,
                                 null,
-                                tint = if (i < p.rating.toInt()) Color(0xFFFFB300) else Color.White.copy(alpha = 0.3f),
+                                tint = if (i < headerRating.toInt()) Color(0xFFFFB300) else Color.White.copy(alpha = 0.3f),
                                 modifier = Modifier.size(16.dp)
                             )
                         }
                         Spacer(Modifier.width(6.dp))
-                        Text("%.1f".format(p.rating), fontSize = 13.sp, color = Color.White)
+                        Text("%.1f".format(headerRating), fontSize = 13.sp, color = Color.White)
                     }
                 } else {
                     Text(
@@ -312,61 +316,37 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                     }
                 }
                 Spacer(Modifier.height(8.dp))
-                p.history.reversed().forEach { h ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = AppColors.Surface),
-                        elevation = CardDefaults.cardElevation(2.dp)
-                    ) {
-                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            // Service + earnings row
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                    Box(
-                                        Modifier.size(36.dp).background(AppColors.PrimaryContainer, RoundedCornerShape(8.dp)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(Icons.Default.List, null, tint = AppColors.Primary, modifier = Modifier.size(18.dp))
-                                    }
-                                    Spacer(Modifier.width(12.dp))
-                                    Text(h.description, fontSize = 14.sp, color = AppColors.TextPrimary)
-                                }
-                                Text("৳ ${h.earning.toInt()}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = AppColors.Success)
-                            }
-                            // Client name + client's rating of provider
-                            if (h.clientName.isNotBlank() || h.clientRating > 0) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(start = 48.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    if (h.clientName.isNotBlank())
-                                        Text("${AppStrings.clientLabel}: ${h.clientName}", fontSize = 12.sp, color = AppColors.TextSecondary)
-                                    if (h.clientRating > 0)
-                                        Text("${"⭐".repeat(h.clientRating)}", fontSize = 12.sp)
-                                }
-                            }
-                            // Provider rates client
-                            val savedRating  = h.providerRatingForClient
-                            val pickedRating = clientRatings[h.id] ?: savedRating
-                            if (h.clientName.isNotBlank()) {
-                                Column(modifier = Modifier.padding(start = 48.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                // Detail dialog for selected history item
+                selectedHistory?.let { h ->
+                    AlertDialog(
+                        onDismissRequest = { selectedHistory = null },
+                        title = { Text(h.description, fontWeight = FontWeight.Bold) },
+                        text = {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                if (h.completedAt.isNotBlank())
+                                    Text("🕐 ${h.completedAt}", fontSize = 12.sp, color = AppColors.TextSecondary)
+                                if (h.address.isNotBlank())
+                                    Text("📍 ${h.address}", fontSize = 13.sp, color = AppColors.TextSecondary)
+                                Text("💰 ৳ ${h.earning.toInt()}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = AppColors.Success)
+                                if (h.clientName.isNotBlank())
+                                    Text("${AppStrings.clientLabel}: ${h.clientName}", fontSize = 13.sp, color = AppColors.TextPrimary)
+                                if (h.clientRating > 0)
+                                    Text("${"⭐".repeat(h.clientRating)} ${AppStrings.providerRatingLbl}", fontSize = 12.sp)
+                                // Rate client
+                                val savedRating  = h.providerRatingForClient
+                                val pickedRating = clientRatings[h.id] ?: savedRating
+                                if (h.clientName.isNotBlank()) {
                                     Text(
                                         if (pickedRating > 0) AppStrings.ratedClient else AppStrings.rateClientTitle,
                                         fontSize = 12.sp,
                                         color = if (pickedRating > 0) AppColors.TextSecondary else AppColors.Primary,
-                                        fontWeight = if (pickedRating > 0) FontWeight.Normal else FontWeight.SemiBold
+                                        fontWeight = FontWeight.SemiBold
                                     )
                                     Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                                         (1..5).forEach { star ->
-                                            val filled = star <= pickedRating
                                             androidx.compose.material3.IconButton(
                                                 onClick = {
-                                                    if (savedRating == 0) { // allow rating only once
+                                                    if (savedRating == 0) {
                                                         clientRatings[h.id] = star
                                                         h.providerRatingForClient = star
                                                         FirebaseFirestore.getInstance()
@@ -378,12 +358,47 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                                                 enabled = savedRating == 0
                                             ) {
                                                 Icon(Icons.Default.Star, null,
-                                                    tint = if (filled) Color(0xFFFFA000) else Color(0xFFBDBDBD),
+                                                    tint = if (star <= pickedRating) Color(0xFFFFA000) else Color(0xFFBDBDBD),
                                                     modifier = Modifier.size(22.dp))
                                             }
                                         }
                                     }
                                 }
+                            }
+                        },
+                        confirmButton = {
+                            Button(onClick = { selectedHistory = null },
+                                colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)) {
+                                Text(AppStrings.cancelBtn)
+                            }
+                        }
+                    )
+                }
+
+                p.history.reversed().forEach { h ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { selectedHistory = h },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = AppColors.Surface),
+                        elevation = CardDefaults.cardElevation(2.dp)
+                    ) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(14.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                Text(h.description, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
+                                if (h.address.isNotBlank())
+                                    Text("📍 ${h.address}", fontSize = 12.sp, color = AppColors.TextSecondary, maxLines = 1)
+                                if (h.completedAt.isNotBlank())
+                                    Text("🕐 ${h.completedAt}", fontSize = 11.sp, color = Color(0xFF9E9E9E))
+                                if (h.clientRating > 0)
+                                    Text("${"⭐".repeat(h.clientRating)}", fontSize = 11.sp)
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("৳ ${h.earning.toInt()}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = AppColors.Success)
+                                Text("→", fontSize = 12.sp, color = AppColors.TextSecondary)
                             }
                         }
                     }

@@ -111,9 +111,16 @@ object ClientRepository {
     }
 
     suspend fun disagreeWithProvider(requestId: String): Result<Unit> = runCatching {
-        db.collection("requests").document(requestId).update(
-            mapOf("status" to "cancelled", "cancelledAt" to FieldValue.serverTimestamp())
-        ).await()
+        // Reset to pending so other providers can see and accept the job
+        db.collection("requests").document(requestId).update(mapOf(
+            "status"          to "pending",
+            "providerId"      to "",
+            "providerName"    to "",
+            "providerPhone"   to "",
+            "providerRating"  to 0.0,
+            "providerBaseFee" to 0.0,
+            "agreedPrice"     to 0.0
+        )).await()
     }
 
     suspend fun cancelRequest(requestId: String): Result<Unit> = runCatching {
@@ -121,10 +128,15 @@ object ClientRepository {
     }
 
     // ── Edit a pending request ────────────────────────────────────────────────
-    suspend fun updateRequest(requestId: String, address: String, description: String): Result<Unit> = runCatching {
+    suspend fun updateRequest(
+        requestId: String, serviceType: String, description: String,
+        address: String, area: String
+    ): Result<Unit> = runCatching {
         db.collection("requests").document(requestId).update(mapOf(
+            "serviceType" to serviceType,
+            "description" to description,
             "address"     to address,
-            "description" to description
+            "area"        to area
         )).await()
     }
 
@@ -245,7 +257,14 @@ object ClientRepository {
                         lat             = doc.getDouble("lat")            ?: 0.0,
                         lng             = doc.getDouble("lng")            ?: 0.0,
                         agreedPrice     = doc.getDouble("agreedPrice")    ?: 0.0,
-                        minSkillLevel   = doc.getString("minSkillLevel")  ?: ""
+                        minSkillLevel   = doc.getString("minSkillLevel")  ?: "",
+                        createdAt       = run {
+                            val ts = doc.getTimestamp("createdAt")
+                            ts?.let {
+                                val sdf = java.text.SimpleDateFormat("dd MMM, HH:mm", java.util.Locale.ENGLISH)
+                                sdf.format(java.util.Date(it.seconds * 1000))
+                            } ?: ""
+                        }
                     ))
                 }
             }
