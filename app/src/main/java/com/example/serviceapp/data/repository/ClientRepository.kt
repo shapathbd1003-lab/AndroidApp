@@ -8,6 +8,7 @@ import com.example.serviceapp.data.model.Client
 import com.example.serviceapp.data.model.ServiceRequest
 import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.utils.NotificationHelper
+import com.example.serviceapp.utils.formatTimestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -110,9 +111,12 @@ object ClientRepository {
         ).await()
     }
 
-    suspend fun disagreeWithProvider(requestId: String): Result<Unit> = runCatching {
-        // Reset to pending so other providers can see and accept the job
-        db.collection("requests").document(requestId).update(mapOf(
+    suspend fun disagreeWithProvider(
+        requestId: String,
+        rejectedProviderId: String = "",
+        blockProvider: Boolean = false   // true = "Other" reason; false = "Price" (provider can re-bid)
+    ): Result<Unit> = runCatching {
+        val updates = mutableMapOf<String, Any>(
             "status"          to "pending",
             "providerId"      to "",
             "providerName"    to "",
@@ -120,7 +124,11 @@ object ClientRepository {
             "providerRating"  to 0.0,
             "providerBaseFee" to 0.0,
             "agreedPrice"     to 0.0
-        )).await()
+        )
+        if (blockProvider && rejectedProviderId.isNotBlank()) {
+            updates["blockedProviders"] = FieldValue.arrayUnion(rejectedProviderId)
+        }
+        db.collection("requests").document(requestId).update(updates).await()
     }
 
     suspend fun cancelRequest(requestId: String): Result<Unit> = runCatching {
@@ -258,13 +266,7 @@ object ClientRepository {
                         lng             = doc.getDouble("lng")            ?: 0.0,
                         agreedPrice     = doc.getDouble("agreedPrice")    ?: 0.0,
                         minSkillLevel   = doc.getString("minSkillLevel")  ?: "",
-                        createdAt       = run {
-                            val ts = doc.getTimestamp("createdAt")
-                            ts?.let {
-                                val sdf = java.text.SimpleDateFormat("dd MMM, HH:mm", java.util.Locale.ENGLISH)
-                                sdf.format(java.util.Date(it.seconds * 1000))
-                            } ?: ""
-                        }
+                        createdAt       = doc.getTimestamp("createdAt")?.let { formatTimestamp(it.seconds) } ?: ""
                     ))
                 }
             }

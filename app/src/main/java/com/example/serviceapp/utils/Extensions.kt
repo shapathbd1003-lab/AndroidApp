@@ -12,6 +12,25 @@ import androidx.compose.ui.unit.dp
 
 fun Double.toBDT(): String = "৳ ${"%.0f".format(this)}"
 
+/** Returns "Today, HH:mm" / "Yesterday, HH:mm" / "dd MMM, HH:mm" */
+fun formatTimestamp(epochSeconds: Long): String {
+    val date  = java.util.Date(epochSeconds * 1000)
+    val cal   = java.util.Calendar.getInstance().apply { time = date }
+    val today = java.util.Calendar.getInstance()
+    val yest  = java.util.Calendar.getInstance().apply { add(java.util.Calendar.DAY_OF_YEAR, -1) }
+    val timeFmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale.ENGLISH)
+    return when {
+        cal[java.util.Calendar.YEAR] == today[java.util.Calendar.YEAR] &&
+        cal[java.util.Calendar.DAY_OF_YEAR] == today[java.util.Calendar.DAY_OF_YEAR] ->
+            "Today, ${timeFmt.format(date)}"
+        cal[java.util.Calendar.YEAR] == yest[java.util.Calendar.YEAR] &&
+        cal[java.util.Calendar.DAY_OF_YEAR] == yest[java.util.Calendar.DAY_OF_YEAR] ->
+            "Yesterday, ${timeFmt.format(date)}"
+        else ->
+            java.text.SimpleDateFormat("dd MMM, HH:mm", java.util.Locale.ENGLISH).format(date)
+    }
+}
+
 fun Modifier.verticalScrollbar(
     scrollState: ScrollState,
     width: Dp = 3.dp,

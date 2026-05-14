@@ -102,10 +102,10 @@ class ClientViewModel : ViewModel() {
         }
     }
 
-    fun disagreeWithProvider(requestId: String) {
+    fun disagreeWithProvider(requestId: String, rejectedProviderId: String = "", blockProvider: Boolean = false) {
         viewModelScope.launch {
             actionLoading = true
-            ClientRepository.disagreeWithProvider(requestId)
+            ClientRepository.disagreeWithProvider(requestId, rejectedProviderId, blockProvider)
             actionLoading = false
         }
     }

@@ -38,7 +38,49 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
     var serviceRating   by remember { mutableStateOf(0) }
     var reviewText      by remember { mutableStateOf("") }
     val selectedRating  = providerRating
-    var showEditDialog   by remember { mutableStateOf(false) }
+    var editProblems      by remember { mutableStateOf(setOf<String>()) }
+    var showEditDialog    by remember { mutableStateOf(false) }
+    var showRejectDialog by remember { mutableStateOf(false) }
+
+    if (showRejectDialog && request != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showRejectDialog = false },
+            title = { androidx.compose.material3.Text(if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN) "প্রত্যাখ্যানের কারণ" else "Reason for rejection") },
+            text  = {
+                androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+                    androidx.compose.material3.Text(if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN) "কেন প্রত্যাখ্যান করছেন?" else "Why are you rejecting this provider?", fontSize = 13.sp, color = Color(0xFF757575))
+                    Button(
+                        onClick = {
+                            // Price reason: provider can bid on this job again
+                            vm.disagreeWithProvider(request.id, request.providerId, blockProvider = false)
+                            showRejectDialog = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = purple)
+                    ) {
+                        androidx.compose.material3.Text(if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN) "💰 দাম বেশি" else "💰 Price too high")
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            // Other reason: block provider from this job
+                            vm.disagreeWithProvider(request.id, request.providerId, blockProvider = true)
+                            showRejectDialog = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFC62828))
+                    ) {
+                        androidx.compose.material3.Text(if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN) "❌ অন্য কারণ" else "❌ Other reason", color = Color(0xFFC62828))
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                OutlinedButton(onClick = { showRejectDialog = false }) {
+                    androidx.compose.material3.Text(AppStrings.cancelBtn)
+                }
+            }
+        )
+    }
     var showAreaPicker2  by remember { mutableStateOf(false) }
     var editServiceType  by remember { mutableStateOf(request?.serviceType ?: "") }
     var editAddress      by remember { mutableStateOf(request?.address ?: "") }
@@ -87,6 +129,32 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                             }
                         }
                     }
+                    // Problem chips for the selected service type
+                    item {
+                        val isBnEdit = AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN
+                        val editCat = ServiceData.categoryById(editServiceType)
+                        if (editCat != null) {
+                            androidx.compose.material3.Text(AppStrings.problemDescLabel, fontSize = 12.sp, color = Color(0xFF757575))
+                            androidx.compose.foundation.layout.Spacer(Modifier.height(6.dp))
+                            androidx.compose.foundation.layout.FlowRow(
+                                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+                                verticalArrangement   = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)
+                            ) {
+                                editCat.problems.forEach { prob ->
+                                    val lbl = if (isBnEdit) prob.bnLabel else prob.enLabel
+                                    FilterChip(
+                                        selected = editProblems.contains(lbl),
+                                        onClick  = {
+                                            editProblems = if (editProblems.contains(lbl)) editProblems - lbl else editProblems + lbl
+                                            editDescription = (editProblems + if (editProblems.contains(lbl)) setOf(lbl) else emptySet()).joinToString(", ")
+                                        },
+                                        label    = { androidx.compose.material3.Text(lbl, fontSize = 11.sp) },
+                                        colors   = FilterChipDefaults.filterChipColors(selectedContainerColor = purple, selectedLabelColor = Color.White)
+                                    )
+                                }
+                            }
+                        }
+                    }
                     item {
                         OutlinedTextField(
                             value = editDescription, onValueChange = { editDescription = it },
@@ -94,7 +162,8 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                             modifier = Modifier.fillMaxWidth(),
                             shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
                             colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = purple, cursorColor = purple),
-                            maxLines = 3
+                            maxLines = 3,
+                            placeholder = { androidx.compose.material3.Text(if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN) "সমস্যার বিবরণ..." else "Describe the issue...") }
                         )
                     }
                     item {
@@ -204,6 +273,8 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                             editAddress      = request.address
                             editArea         = request.area
                             editDescription  = request.description
+                            // Pre-select problems from description (comma-separated)
+                            editProblems     = request.description.split(", ").filter { it.isNotBlank() }.toSet()
                             showEditDialog   = true
                         },
                         modifier = Modifier.weight(1f).height(52.dp),
@@ -226,14 +297,13 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                 }
                 "awaiting_approval" -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedButton(
-                        onClick = { vm.disagreeWithProvider(request.id) },
+                        onClick = { showRejectDialog = true },
                         modifier = Modifier.weight(1f).height(52.dp),
                         enabled = !vm.actionLoading,
                         shape = RoundedCornerShape(14.dp),
                         border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFC62828))
                     ) {
-                        if (vm.actionLoading) CircularProgressIndicator(Modifier.size(18.dp), color = Color(0xFFC62828), strokeWidth = 2.dp)
-                        else Text(AppStrings.disagreeBtn, fontSize = 14.sp, color = Color(0xFFC62828))
+                        Text(AppStrings.disagreeBtn, fontSize = 14.sp, color = Color(0xFFC62828))
                     }
                     Button(
                         onClick = { vm.agreeToProvider(request.id) },

@@ -11,6 +11,7 @@ import com.example.serviceapp.data.model.ServiceHistory
 import com.example.serviceapp.utils.AppStrings
 import com.example.serviceapp.utils.ImageUploader
 import com.example.serviceapp.utils.ServiceData
+import com.example.serviceapp.utils.formatTimestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
@@ -223,16 +224,18 @@ object FakeRepository {
                     val minSkill   = doc.getString("minSkillLevel") ?: ""
                     val skillMatch = minSkill.isEmpty() || meetsSkillRequirement(p.skillLevel, minSkill)
 
-                    // Price: provider's base fee must not exceed client's max
                     val reqMaxPrice  = doc.getDouble("maxPrice") ?: 0.0
                     val priceMatch   = reqMaxPrice <= 0.0 || p.baseFee <= reqMaxPrice
 
-                    // Rating: provider's rating must meet client's minimum
                     val reqMinRating = doc.getDouble("minRating") ?: 0.0
                     val ratingMatch  = reqMinRating <= 0.0 || p.rating >= reqMinRating
 
+                    // Client may have blocked this provider after rejecting with "Other" reason
+                    val blocked = (doc.get("blockedProviders") as? List<*>)
+                        ?.filterIsInstance<String>()?.contains(uid) == true
+
                     when {
-                        status == "pending" && docProviderId.isEmpty() &&
+                        status == "pending" && docProviderId.isEmpty() && !blocked &&
                         problemType in allowed && areaMatch && skillMatch &&
                         priceMatch && ratingMatch -> {
                             newJobs[doc.id] = docToJob(doc, "pending")
@@ -284,11 +287,7 @@ object FakeRepository {
     }
 
     private fun docToJob(doc: DocumentSnapshot, localStatus: String): Job {
-        val ts = doc.getTimestamp("createdAt")
-        val formattedTime = ts?.let {
-            val sdf = java.text.SimpleDateFormat("dd MMM, HH:mm", java.util.Locale.ENGLISH)
-            sdf.format(java.util.Date(it.seconds * 1000))
-        } ?: ""
+        val formattedTime = doc.getTimestamp("createdAt")?.let { formatTimestamp(it.seconds) } ?: ""
         return Job(
             id          = doc.id,
             description = AppStrings.serviceTypeName(doc.getString("serviceType") ?: ""),
@@ -318,11 +317,8 @@ object FakeRepository {
         val clientName   = doc.getString("clientName")  ?: ""
         val address      = doc.getString("address")     ?: ""
         val clientRating = (doc.getLong("rating") ?: 0).toInt()
-        val doneAt       = doc.getTimestamp("completedAt") ?: doc.getTimestamp("finishedAt")
-        val formattedDate = doneAt?.let {
-            java.text.SimpleDateFormat("dd MMM, HH:mm", java.util.Locale.ENGLISH)
-                .format(java.util.Date(it.seconds * 1000))
-        } ?: ""
+        val doneAt        = doc.getTimestamp("completedAt") ?: doc.getTimestamp("finishedAt")
+        val formattedDate = doneAt?.let { formatTimestamp(it.seconds) } ?: ""
         prov.advance += fee
         prov.history.add(ServiceHistory(doc.id, desc, fee, clientName, address, formattedDate, clientRating))
         val uid = auth.currentUser?.uid ?: return

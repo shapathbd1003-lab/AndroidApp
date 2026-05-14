@@ -135,20 +135,19 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                 // Skill level badge
                 SkillBadge(p.skillLevel)
                 Spacer(Modifier.height(8.dp))
-                // Use reviews.average() so profile header and graph always show the same number
-                val headerRating = if (reviews.isNotEmpty()) reviews.map { it.rating }.average() else p.rating
-                if (p.ratingCount > 0 || reviews.isNotEmpty()) {
+                // Use p.rating (from Firestore) — same value the Dashboard shows — no mismatch
+                if (p.ratingCount > 0) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         repeat(5) { i ->
                             Icon(
                                 Icons.Default.Star,
                                 null,
-                                tint = if (i < headerRating.toInt()) Color(0xFFFFB300) else Color.White.copy(alpha = 0.3f),
+                                tint = if (i < p.rating.toInt()) Color(0xFFFFB300) else Color.White.copy(alpha = 0.3f),
                                 modifier = Modifier.size(16.dp)
                             )
                         }
                         Spacer(Modifier.width(6.dp))
-                        Text("%.1f".format(headerRating), fontSize = 13.sp, color = Color.White)
+                        Text("%.1f".format(p.rating), fontSize = 13.sp, color = Color.White)
                     }
                 } else {
                     Text(

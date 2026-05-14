@@ -293,29 +293,6 @@ fun DashboardScreen(vm: MainViewModel, nav: NavController) {
             ) {
                 Text("🧪 +500 ${AppStrings.pointsLabel} (test)", fontSize = 13.sp)
             }
-
-            if (p.history.isNotEmpty()) {
-                Spacer(Modifier.height(16.dp))
-                Text(AppStrings.recentActivity, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
-                Spacer(Modifier.height(8.dp))
-                p.history.takeLast(3).reversed().forEach { h ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = AppColors.Surface),
-                        elevation = CardDefaults.cardElevation(2.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(
-                            Modifier.fillMaxWidth().padding(14.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(h.description, fontSize = 14.sp, color = AppColors.TextPrimary)
-                            Text("৳ ${h.earning.toInt()}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = AppColors.Success)
-                        }
-                    }
-                }
-            }
         }
     }
 }

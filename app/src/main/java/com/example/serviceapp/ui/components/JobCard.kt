@@ -167,13 +167,13 @@ fun JobCard(
                     }
                 }
             }
-            // Phone revealed after client confirms the provider (agreed and beyond)
-            if (job.phone.isNotBlank() && job.status in listOf("agreed", "on_the_way", "arrived", "working", "finished")) {
+            // Phone revealed after client confirms; always show the row once confirmed
+            if (job.status in listOf("agreed", "on_the_way", "arrived", "working", "finished")) {
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Phone, null, tint = Color(0xFF9E9E9E), modifier = Modifier.size(15.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text(job.phone, fontSize = 12.sp, color = AppColors.TextSecondary)
+                    Text(job.phone.ifBlank { "—" }, fontSize = 12.sp, color = AppColors.TextSecondary)
                 }
             }
 
@@ -209,10 +209,7 @@ fun JobCard(
                             }
                         }
                     }
-                    isAwaiting -> Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFFFF8E1)) {
-                        Text(AppStrings.awaitingClientApproval, fontSize = 12.sp, color = Color(0xFFE65100),
-                            fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
-                    }
+                    isAwaiting -> { /* Status badge in header already shows awaiting — no duplicate text */ }
                     isAgreed && onMarkOnTheWay != null -> if (!hasPoints) {
                         Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFFFEBEE)) {
                             Text(AppStrings.insufficientPoints, fontSize = 12.sp, color = Color(0xFFC62828),

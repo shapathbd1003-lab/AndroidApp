@@ -156,10 +156,10 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                     }
                     Spacer(Modifier.height(14.dp))
                     InfoRow(Icons.Default.LocationOn, AppStrings.address, job.address, Color(0xFF1565C0))
-                    // Contact revealed once client has confirmed the provider (agreed and beyond)
-                    if (job.status in listOf("agreed", "on_the_way", "arrived", "working", "finished") && job.phone.isNotBlank()) {
+                    // Contact revealed once client has confirmed; always show the row so provider can see it
+                    if (job.status in listOf("agreed", "on_the_way", "arrived", "working", "finished")) {
                         Spacer(Modifier.height(10.dp))
-                        InfoRow(Icons.Default.Phone, AppStrings.contact, job.phone, Color(0xFF6A1B9A))
+                        InfoRow(Icons.Default.Phone, AppStrings.contact, job.phone.ifBlank { "—" }, Color(0xFF6A1B9A))
                     }
                 }
             }
@@ -220,10 +220,7 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                         }
                     }
                 }
-                "awaiting" -> Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), color = Color(0xFFFFF8E1)) {
-                    Text(AppStrings.awaitingClientApproval, color = Color(0xFFE65100), fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(14.dp))
-                }
+                "awaiting" -> { /* Status shown in header badge only — no duplicate action banner */ }
                 "agreed" -> if (!vm.hasEnoughPoints) {
                     Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), color = Color(0xFFFFEBEE)) {
                         Text(AppStrings.insufficientPoints, color = Color(0xFFC62828), fontWeight = FontWeight.SemiBold,
