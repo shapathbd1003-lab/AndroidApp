@@ -32,10 +32,56 @@ import com.example.serviceapp.viewmodel.ClientViewModel
 fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavController) {
     val request        = vm.requests.find { it.id == requestId }
     val purple         = Color(0xFF6A1B9A)
-    var providerRating by remember { mutableStateOf(0) }  // provider behavior
-    var serviceRating  by remember { mutableStateOf(0) }  // service quality
-    var reviewText     by remember { mutableStateOf("") }
-    val selectedRating = providerRating // kept for compat
+    var providerRating  by remember { mutableStateOf(0) }
+    var serviceRating   by remember { mutableStateOf(0) }
+    var reviewText      by remember { mutableStateOf("") }
+    val selectedRating  = providerRating
+    var showEditDialog  by remember { mutableStateOf(false) }
+    var editAddress     by remember { mutableStateOf(request?.address ?: "") }
+    var editDescription by remember { mutableStateOf(request?.description ?: "") }
+
+    if (showEditDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { androidx.compose.material3.Text(AppStrings.editProfile) },
+            text  = {
+                androidx.compose.foundation.layout.Column(
+                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedTextField(
+                        value = editAddress, onValueChange = { editAddress = it },
+                        label = { androidx.compose.material3.Text(AppStrings.addressLabel) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = purple, cursorColor = purple),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = editDescription, onValueChange = { editDescription = it },
+                        label = { androidx.compose.material3.Text(AppStrings.problemDescLabel) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = purple, cursorColor = purple),
+                        maxLines = 3
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (request != null) vm.updateRequest(request.id, editAddress.trim(), editDescription.trim())
+                        showEditDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = purple)
+                ) { androidx.compose.material3.Text(AppStrings.saveChanges) }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showEditDialog = false }) {
+                    androidx.compose.material3.Text(AppStrings.cancelBtn)
+                }
+            }
+        )
+    }
 
     Column(Modifier.fillMaxSize().background(Color(0xFFF3E5F5))) {
         // Header
@@ -93,15 +139,30 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
         )
         Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp)) {
             when (request.status) {
-                "pending" -> OutlinedButton(
-                    onClick = { vm.cancelRequest(request.id) { nav.popBackStack() } },
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    enabled = !vm.actionLoading,
-                    shape = RoundedCornerShape(14.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFC62828))
-                ) {
-                    if (vm.actionLoading) CircularProgressIndicator(Modifier.size(18.dp), color = Color(0xFFC62828), strokeWidth = 2.dp)
-                    else Text(AppStrings.cancelRequestBtn, fontSize = 15.sp, color = Color(0xFFC62828), fontWeight = FontWeight.SemiBold)
+                "pending" -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedButton(
+                        onClick = {
+                            editAddress     = request.address
+                            editDescription = request.description
+                            showEditDialog  = true
+                        },
+                        modifier = Modifier.weight(1f).height(52.dp),
+                        enabled = !vm.actionLoading,
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Text(AppStrings.editProfile.replace("Profile", "Request").replace("প্রোফাইল", "অনুরোধ"),
+                            fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    OutlinedButton(
+                        onClick = { vm.cancelRequest(request.id) { nav.popBackStack() } },
+                        modifier = Modifier.weight(1f).height(52.dp),
+                        enabled = !vm.actionLoading,
+                        shape = RoundedCornerShape(14.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFC62828))
+                    ) {
+                        if (vm.actionLoading) CircularProgressIndicator(Modifier.size(18.dp), color = Color(0xFFC62828), strokeWidth = 2.dp)
+                        else Text(AppStrings.cancelRequestBtn, fontSize = 14.sp, color = Color(0xFFC62828), fontWeight = FontWeight.SemiBold)
+                    }
                 }
                 "awaiting_approval" -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedButton(
@@ -262,8 +323,8 @@ private fun ProviderInfoCard(req: ServiceRequest) {
             Text(AppStrings.assignedProvider, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF6A1B9A))
             HorizontalDivider(color = Color(0xFF6A1B9A).copy(alpha = 0.2f))
             InfoRow("👤 ${AppStrings.providerName}",    req.providerName)
-            // Phone is shown only while the provider is actively traveling / working
-            if (req.status in listOf("on_the_way", "arrived", "working") && req.providerPhone.isNotBlank())
+            // Phone shown from the moment client confirms provider until job is done
+            if (req.status in listOf("accepted", "on_the_way", "arrived", "working", "finished", "completed") && req.providerPhone.isNotBlank())
                 InfoRow("📞 ${AppStrings.providerPhone}", req.providerPhone)
             InfoRow("⭐ ${AppStrings.providerRatingLbl}", "%.1f / 5.0".format(req.providerRating))
             if (req.agreedPrice > 0)

@@ -46,7 +46,6 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
     // Log every recompose so we can see status + button changes in Logcat
     android.util.Log.d("JobFlow", "JobDetailScreen recompose: id=${id.takeLast(6)} status=${job.status} hasPoints=${vm.hasEnoughPoints}")
 
-    var showPriceDialog  by remember { mutableStateOf(false) }
     var showAcceptDialog by remember { mutableStateOf(false) }
     var customPrice      by remember { mutableStateOf(vm.provider?.baseFee?.toString() ?: "") }
     var actionLoading    by remember { mutableStateOf(false) }
@@ -82,31 +81,6 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
             },
             dismissButton = {
                 OutlinedButton(onClick = { showAcceptDialog = false }) { Text(AppStrings.cancelBtn) }
-            }
-        )
-    }
-
-    // Dialog: update price after client confirmed (agreed state)
-    if (showPriceDialog) {
-        AlertDialog(
-            onDismissRequest = { showPriceDialog = false },
-            title   = { Text(AppStrings.setJobPrice) },
-            text    = {
-                OutlinedTextField(
-                    value = customPrice,
-                    onValueChange = { customPrice = it },
-                    label = { Text("৳ ${AppStrings.agreedPriceLabel}") },
-                    singleLine = true
-                )
-            },
-            confirmButton = {
-                Button(onClick = {
-                    customPrice.toDoubleOrNull()?.let { vm.setAgreedPrice(job.id, it) }
-                    showPriceDialog = false
-                }) { Text(AppStrings.saveChanges) }
-            },
-            dismissButton = {
-                OutlinedButton(onClick = { showPriceDialog = false }) { Text(AppStrings.cancelBtn) }
             }
         )
     }
@@ -190,24 +164,16 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                 }
             }
 
-            // Price card — shown when client confirmed; provider can still adjust before going on the way
+            // Price card — locked once client confirms; price was set at acceptance time
             if (job.status == "agreed") {
                 val displayPrice = if (job.agreedPrice > 0) job.agreedPrice else (vm.provider?.baseFee ?: 0.0)
                 Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = AppColors.PrimaryContainer)) {
-                    Row(Modifier.fillMaxWidth().padding(14.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Column {
-                            Text(AppStrings.agreedPriceLabel, fontSize = 12.sp, color = AppColors.TextSecondary)
-                            Text("৳ ${displayPrice.toInt()} ${AppStrings.perService}",
-                                fontSize = 16.sp, fontWeight = FontWeight.Bold, color = AppColors.Primary)
-                        }
-                        OutlinedButton(onClick = {
-                            customPrice = displayPrice.toString()
-                            showPriceDialog = true
-                        }, shape = RoundedCornerShape(8.dp)) {
-                            Text(AppStrings.setJobPrice, fontSize = 12.sp)
-                        }
+                    Column(Modifier.padding(14.dp)) {
+                        Text(AppStrings.agreedPriceLabel, fontSize = 12.sp, color = AppColors.TextSecondary)
+                        Text("৳ ${displayPrice.toInt()} ${AppStrings.perService}",
+                            fontSize = 16.sp, fontWeight = FontWeight.Bold, color = AppColors.Primary)
+                        Text("✓ Price confirmed by client", fontSize = 11.sp, color = AppColors.Primary.copy(alpha = 0.7f))
                     }
                 }
             }
@@ -221,7 +187,8 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                         Text("☑️", fontSize = 24.sp)
                         Column {
                             Text(AppStrings.finishedStatus, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = AppColors.Success)
-                            Text("৳ ${(vm.provider?.baseFee ?: 0.0).toInt()} ${AppStrings.earned}",
+                            val earnedAmt = if (job.agreedPrice > 0) job.agreedPrice else (vm.provider?.baseFee ?: 0.0)
+                            Text("৳ ${earnedAmt.toInt()} ${AppStrings.earned}",
                                 fontSize = 13.sp, color = AppColors.Success)
                         }
                     }

@@ -400,34 +400,74 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                 }
             }
 
-            // ── Reviews ───────────────────────────────────────────────────────
+            // ── Rating graph ──────────────────────────────────────────────────
             Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(AppStrings.reviewsTitle, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
-                Text("${reviews.size} ${AppStrings.reviewUnit}", fontSize = 12.sp, color = AppColors.TextSecondary)
-            }
+            Text(AppStrings.reviewsTitle, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
             Spacer(Modifier.height(8.dp))
-            if (reviews.isEmpty()) {
-                Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = AppColors.Surface), elevation = CardDefaults.cardElevation(1.dp)) {
-                    Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
+            Card(
+                Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = AppColors.Surface),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                if (reviews.isEmpty()) {
+                    Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
                         Text(AppStrings.noReviewsYet, fontSize = 13.sp, color = AppColors.TextSecondary)
                     }
-                }
-            } else {
-                reviews.forEach { review ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = AppColors.Surface),
-                        elevation = CardDefaults.cardElevation(2.dp)
-                    ) {
-                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(review.clientName, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = AppColors.TextPrimary)
-                                Text("${"⭐".repeat(review.rating)}", fontSize = 13.sp)
+                } else {
+                    val avg = reviews.map { it.rating }.average()
+                    Column(Modifier.padding(16.dp)) {
+                        // Summary row
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("%.1f".format(avg), fontSize = 40.sp, fontWeight = FontWeight.Bold, color = AppColors.Primary)
+                                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    repeat(5) { i ->
+                                        Icon(Icons.Default.Star, null,
+                                            tint = if (i < avg.toInt()) Color(0xFFFFA000) else Color(0xFFBDBDBD),
+                                            modifier = Modifier.size(14.dp))
+                                    }
+                                }
+                                Text("${reviews.size} ${AppStrings.reviewUnit}", fontSize = 11.sp, color = AppColors.TextSecondary)
                             }
-                            if (review.serviceType.isNotBlank()) Text(review.serviceType, fontSize = 11.sp, color = AppColors.TextSecondary)
-                            if (review.comment.isNotBlank()) Text("\"${review.comment}\"", fontSize = 13.sp, color = AppColors.TextPrimary)
+                            // Bar chart
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                (5 downTo 1).forEach { star ->
+                                    val count = reviews.count { it.rating == star }
+                                    val fraction = if (reviews.isNotEmpty()) count.toFloat() / reviews.size else 0f
+                                    Row(verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Text("$star⭐", fontSize = 11.sp, color = AppColors.TextSecondary,
+                                            modifier = Modifier.width(30.dp))
+                                        Box(Modifier.weight(1f).height(10.dp)
+                                            .background(Color(0xFFEEEEEE), RoundedCornerShape(5.dp))) {
+                                            if (fraction > 0f) {
+                                                Box(Modifier.fillMaxHeight().fillMaxWidth(fraction)
+                                                    .background(Color(0xFFFFA000), RoundedCornerShape(5.dp)))
+                                            }
+                                        }
+                                        Text("$count", fontSize = 11.sp, color = AppColors.TextSecondary,
+                                            modifier = Modifier.width(20.dp),
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.End)
+                                    }
+                                }
+                            }
+                        }
+                        // Recent comments (max 3)
+                        val commented = reviews.filter { it.comment.isNotBlank() }.take(3)
+                        if (commented.isNotEmpty()) {
+                            HorizontalDivider(Modifier.padding(vertical = 10.dp), color = AppColors.Divider)
+                            commented.forEach { review ->
+                                Row(Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.Top) {
+                                    Text("\"${review.comment}\"", fontSize = 12.sp,
+                                        color = AppColors.TextPrimary, modifier = Modifier.weight(1f))
+                                    Text("${"⭐".repeat(review.rating)}", fontSize = 11.sp,
+                                        modifier = Modifier.padding(start = 8.dp))
+                                }
+                            }
                         }
                     }
                 }

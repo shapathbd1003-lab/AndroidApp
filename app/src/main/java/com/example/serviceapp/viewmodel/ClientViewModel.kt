@@ -73,6 +73,15 @@ class ClientViewModel : ViewModel() {
         }
     }
 
+    fun updateRequest(requestId: String, address: String, description: String, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            actionLoading = true
+            ClientRepository.updateRequest(requestId, address, description)
+            actionLoading = false
+            onDone()
+        }
+    }
+
     fun cancelRequest(requestId: String, onDone: () -> Unit = {}) {
         viewModelScope.launch {
             actionLoading = true

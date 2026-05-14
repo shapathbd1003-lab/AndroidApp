@@ -120,6 +120,14 @@ object ClientRepository {
         db.collection("requests").document(requestId).delete().await()
     }
 
+    // ── Edit a pending request ────────────────────────────────────────────────
+    suspend fun updateRequest(requestId: String, address: String, description: String): Result<Unit> = runCatching {
+        db.collection("requests").document(requestId).update(mapOf(
+            "address"     to address,
+            "description" to description
+        )).await()
+    }
+
     // ── Mark job done without rating (client confirms work is finished) ────────
     suspend fun completeJob(requestId: String): Result<Unit> = runCatching {
         db.collection("requests").document(requestId).update(mapOf(

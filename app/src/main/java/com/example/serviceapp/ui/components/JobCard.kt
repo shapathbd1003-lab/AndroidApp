@@ -146,6 +146,11 @@ fun JobCard(
 
             Spacer(Modifier.height(10.dp))
 
+            if (job.createdAt.isNotBlank()) {
+                Text("🕐 ${job.createdAt}", fontSize = 11.sp, color = Color(0xFF9E9E9E))
+                Spacer(Modifier.height(4.dp))
+            }
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.LocationOn, null, tint = Color(0xFF9E9E9E), modifier = Modifier.size(15.dp))
                 Spacer(Modifier.width(4.dp))
