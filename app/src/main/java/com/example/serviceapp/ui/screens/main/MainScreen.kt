@@ -83,7 +83,7 @@ fun MainScreen(vm: MainViewModel, nav: NavController) {
     ) { padding ->
         Box(Modifier.padding(padding)) {
             when (selected) {
-                0 -> DashboardScreen(vm, nav)
+                0 -> DashboardScreen(vm, nav, onViewJobs = { selected = 1 }, onViewProfile = { selected = 2 })
                 1 -> JobListScreen(vm, nav)
                 2 -> ProfileScreen(vm, nav)
             }

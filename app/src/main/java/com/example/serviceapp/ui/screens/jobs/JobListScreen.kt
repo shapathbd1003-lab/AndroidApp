@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.google.android.gms.location.LocationServices
+import com.example.serviceapp.navigation.PendingNavigation
 import com.example.serviceapp.navigation.Screen
 import com.example.serviceapp.ui.components.JobCard
 import com.example.serviceapp.ui.theme.AppColors
@@ -34,6 +35,15 @@ fun JobListScreen(vm: MainViewModel, nav: NavController) {
 
     val pendingCount = vm.jobs.count { it.status == "pending" }
     val context      = LocalContext.current
+
+    // Navigate to job detail if a notification deep-link set providerJobId
+    val pendingJob = PendingNavigation.providerJobId
+    LaunchedEffect(pendingJob) {
+        if (pendingJob != null) {
+            PendingNavigation.providerJobId = null
+            nav.navigate(Screen.JobDetail.createRoute(pendingJob))
+        }
+    }
 
     // Get provider location once and sort jobs by distance
     LaunchedEffect(vm.jobs.size) {

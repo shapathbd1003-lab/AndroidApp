@@ -51,6 +51,7 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
     var locationLat         by remember { mutableStateOf(0.0) }
     var locationLng         by remember { mutableStateOf(0.0) }
     var maxPrice            by remember { mutableStateOf(0.0) }
+    var addressDetails      by remember { mutableStateOf("") }  // optional: flat/floor/landmark
     var locationLoading     by remember { mutableStateOf(false) }
     var showAreaPicker      by remember { mutableStateOf(false) }
     var selectedArea        by remember { mutableStateOf("") }
@@ -377,6 +378,15 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
                             modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
                             singleLine = true, colors = fieldColors
                         )
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = addressDetails,
+                            onValueChange = { addressDetails = it },
+                            label = { Text(if (isBn) "ঠিকানার বিস্তারিত (ঐচ্ছিক)" else "Address Details (Optional)") },
+                            placeholder = { Text(if (isBn) "ফ্ল্যাট নং, তলা, ল্যান্ডমার্ক..." else "Flat no, Floor, Landmark...", color = Color(0xFFBDBDBD)) },
+                            modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
+                            singleLine = true, colors = fieldColors
+                        )
                     }
                 }
             }
@@ -435,7 +445,10 @@ fun ClientNewRequestScreen(vm: ClientViewModel, nav: NavController) {
         Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp)) {
             Button(
                 onClick = {
-                    vm.createRequest(selectedCategoryId, description.trim(), address.trim(), 0.0, maxPrice, selectedProblemType, locationLat, locationLng, selectedArea) {
+                    val fullDescription = if (addressDetails.isNotBlank())
+                        "${description.trim()} | ${addressDetails.trim()}"
+                    else description.trim()
+                    vm.createRequest(selectedCategoryId, fullDescription, address.trim(), 0.0, maxPrice, selectedProblemType, locationLat, locationLng, selectedArea) {
                         nav.navigate(Screen.ClientDashboard.route) {
                             popUpTo(Screen.ClientDashboard.route) { inclusive = true }
                         }

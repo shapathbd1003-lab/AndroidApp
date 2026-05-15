@@ -75,11 +75,11 @@ class ClientViewModel : ViewModel() {
 
     fun updateRequest(
         requestId: String, serviceType: String, description: String,
-        address: String, area: String, onDone: () -> Unit = {}
+        maxPrice: Double = 0.0, onDone: () -> Unit = {}
     ) {
         viewModelScope.launch {
             actionLoading = true
-            ClientRepository.updateRequest(requestId, serviceType, description, address, area)
+            ClientRepository.updateRequest(requestId, serviceType, description, maxPrice)
             actionLoading = false
             onDone()
         }
@@ -102,10 +102,10 @@ class ClientViewModel : ViewModel() {
         }
     }
 
-    fun disagreeWithProvider(requestId: String, rejectedProviderId: String = "", blockProvider: Boolean = false) {
+    fun disagreeWithProvider(requestId: String, rejectedProviderId: String = "", blockProvider: Boolean = false, counterOfferPrice: Double = 0.0) {
         viewModelScope.launch {
             actionLoading = true
-            ClientRepository.disagreeWithProvider(requestId, rejectedProviderId, blockProvider)
+            ClientRepository.disagreeWithProvider(requestId, rejectedProviderId, blockProvider, counterOfferPrice)
             actionLoading = false
         }
     }

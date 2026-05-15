@@ -40,7 +40,8 @@ object FakeRepository {
     private var profileListener:  ListenerRegistration? = null
     // Tracks job IDs the provider has cleared from history so the listener won't re-add them
     private val deletedHistory       = mutableSetOf<String>()
-    private val notifiedJobAccepted  = mutableSetOf<String>() // track "client accepted" notifications
+    private val notifiedJobAccepted   = mutableSetOf<String>()
+    private val myPreviouslyAccepted  = mutableSetOf<String>() // jobs this provider accepted (to detect rejections)
 
     val serviceTypes get() = ServiceData.categories.map { it.id }
 
@@ -234,21 +235,36 @@ object FakeRepository {
                     val blocked = (doc.get("blockedProviders") as? List<*>)
                         ?.filterIsInstance<String>()?.contains(uid) == true
 
+                    // Counter-offer: only the targeted provider sees this job
+                    val counterOfferFor = doc.getString("counterOfferFor") ?: ""
+                    val isCounterOffer  = status == "counter_offered" && counterOfferFor == uid
+
                     when {
+                        isCounterOffer -> {
+                            newJobs[doc.id] = docToJob(doc, "counter_offered")
+                        }
                         status == "pending" && docProviderId.isEmpty() && !blocked &&
                         problemType in allowed && areaMatch && skillMatch &&
                         priceMatch && ratingMatch -> {
+                            // Detect if client rejected our previous bid on this job
+                            if (doc.id in myPreviouslyAccepted) {
+                                myPreviouslyAccepted.remove(doc.id)
+                                val svcType = AppStrings.serviceTypeName(doc.getString("serviceType") ?: "")
+                                com.example.serviceapp.utils.NotificationHelper.showClientRejectedNotification(svcType)
+                            }
                             newJobs[doc.id] = docToJob(doc, "pending")
                         }
                         docProviderId == uid -> {
                             val localStatus = when (status) {
-                                "awaiting_approval" -> "awaiting"
+                                "awaiting_approval" -> {
+                                    myPreviouslyAccepted.add(doc.id) // record so we detect if client later rejects
+                                    "awaiting"
+                                }
                                 "accepted"          -> {
-                                    // Client just confirmed — notify provider once
                                     if (doc.id !in notifiedJobAccepted) {
                                         notifiedJobAccepted.add(doc.id)
                                         val svcType = AppStrings.serviceTypeName(doc.getString("serviceType") ?: "")
-                                        com.example.serviceapp.utils.NotificationHelper.showJobAcceptedByClientNotification(svcType)
+                                        com.example.serviceapp.utils.NotificationHelper.showJobAcceptedByClientNotification(svcType, doc.id)
                                     }
                                     "agreed"
                                 }
@@ -509,5 +525,6 @@ object FakeRepository {
         jobs.clear()
         deletedHistory.clear()
         notifiedJobAccepted.clear()
+        myPreviouslyAccepted.clear()
     }
 }

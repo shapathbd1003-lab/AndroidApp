@@ -65,14 +65,47 @@ object NotificationHelper {
         manager.notify(notificationId++, notification)
     }
 
-    fun showJobAcceptedByClientNotification(serviceType: String) {
+    fun showCounterOfferNotification(serviceType: String, price: Int) {
         val ctx = appContext ?: return
         val manager = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notification = NotificationCompat.Builder(ctx, CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle("💬 Client counter-offered ৳$price")
+            .setContentText("Client wants $serviceType for ৳$price. Accept or let others take it.")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+        manager.notify(notificationId++, notification)
+    }
+
+    fun showClientRejectedNotification(serviceType: String) {
+        val ctx = appContext ?: return
+        val manager = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notification = NotificationCompat.Builder(ctx, CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle("❌ Client rejected your proposal")
+            .setContentText("$serviceType job is now available for other providers.")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .build()
+        manager.notify(notificationId++, notification)
+    }
+
+    fun showJobAcceptedByClientNotification(serviceType: String, jobId: String = "") {
+        val ctx = appContext ?: return
+        val manager = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val intent = Intent(ctx, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            if (jobId.isNotBlank()) putExtra("providerJobId", jobId)
+        }
+        val pi = PendingIntent.getActivity(ctx, jobId.hashCode() + 1000, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val notification = NotificationCompat.Builder(ctx, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("✅ Client accepted your proposal!")
             .setContentText("Your $serviceType request has been confirmed. Get ready to go!")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pi)
             .setAutoCancel(true)
             .build()
         manager.notify(notificationId++, notification)

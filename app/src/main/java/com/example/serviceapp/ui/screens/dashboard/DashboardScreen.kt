@@ -58,7 +58,12 @@ import com.example.serviceapp.viewmodel.MainViewModel
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun DashboardScreen(vm: MainViewModel, nav: NavController) {
+fun DashboardScreen(
+    vm: MainViewModel,
+    nav: NavController,
+    onViewJobs: () -> Unit = {},
+    onViewProfile: () -> Unit = {}
+) {
 
     val p = vm.provider ?: return
     val isBn = AppStrings.lang == AppLanguage.BN
@@ -178,9 +183,9 @@ fun DashboardScreen(vm: MainViewModel, nav: NavController) {
             Spacer(Modifier.height(12.dp))
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                InfoTile(Modifier.weight(1f), AppStrings.liveJobs,  "$liveJobCount",  AppColors.PrimaryContainer, AppColors.Primary)
-                InfoTile(Modifier.weight(1f), AppStrings.completed,  "$completedJobs", Color(0xFFE8F5E9),           AppColors.Success)
-                InfoTile(Modifier.weight(1f), AppStrings.availableJobs, "$pendingCount", Color(0xFFFFF3E0),          Color(0xFFE65100))
+                InfoTile(Modifier.weight(1f).clickable { onViewJobs() },   AppStrings.liveJobs,      "$liveJobCount",  AppColors.PrimaryContainer, AppColors.Primary)
+                InfoTile(Modifier.weight(1f).clickable { onViewProfile() },AppStrings.completed,     "$completedJobs", Color(0xFFE8F5E9),           AppColors.Success)
+                InfoTile(Modifier.weight(1f).clickable { onViewJobs() },   AppStrings.availableJobs, "$pendingCount",  Color(0xFFFFF3E0),           Color(0xFFE65100))
             }
 
             // ── Active job card ───────────────────────────────────────────────
@@ -209,25 +214,16 @@ fun DashboardScreen(vm: MainViewModel, nav: NavController) {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        Box(
-                            Modifier.size(52.dp).background(statusBg as Color, RoundedCornerShape(12.dp)),
-                            contentAlignment = Alignment.Center
-                        ) { Text(statusEmoji as String, fontSize = 24.sp) }
                         Column(Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(statusEmoji as String, fontSize = 18.sp)
+                                Text(statusLabel as String, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = statusFg as Color)
+                            }
+                            Spacer(Modifier.height(4.dp))
                             Text(activeJob.description, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = AppColors.TextPrimary)
-                            Spacer(Modifier.height(2.dp))
                             Text(activeJob.address, fontSize = 12.sp, color = AppColors.TextSecondary, maxLines = 1)
                         }
-                        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Surface(shape = RoundedCornerShape(20.dp), color = statusBg) {
-                                Text(
-                                    statusLabel as String, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
-                                    color = statusFg as Color,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                )
-                            }
-                            Text("→ ${if (isBn) "বিস্তারিত" else "Details"}", fontSize = 11.sp, color = AppColors.Primary)
-                        }
+                        Text("→ ${if (isBn) "বিস্তারিত" else "Details"}", fontSize = 12.sp, color = AppColors.Primary, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }

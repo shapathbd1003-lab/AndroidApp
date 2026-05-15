@@ -42,34 +42,75 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
     var showEditDialog    by remember { mutableStateOf(false) }
     var showRejectDialog by remember { mutableStateOf(false) }
 
+    var counterOfferText  by remember { mutableStateOf("") }
+    var showCounterOffer  by remember { mutableStateOf(false) }
+
+    if (showCounterOffer && request != null) {
+        val baseFee = request.providerBaseFee.toInt()
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showCounterOffer = false; showRejectDialog = false },
+            title = { androidx.compose.material3.Text(if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN) "পাল্টা প্রস্তাব" else "Counter Offer") },
+            text  = {
+                androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                    androidx.compose.material3.Text("${if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN) "বেস ফি" else "Base fee"}: ৳$baseFee", fontSize = 12.sp, color = Color(0xFF757575))
+                    OutlinedTextField(
+                        value = counterOfferText, onValueChange = { counterOfferText = it },
+                        label = { androidx.compose.material3.Text(if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN) "আপনার প্রস্তাবিত মূল্য (৳)" else "Your offered price (৳)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = purple, cursorColor = purple),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                val offerAmt = counterOfferText.toDoubleOrNull() ?: 0.0
+                Button(
+                    onClick = {
+                        vm.disagreeWithProvider(request.id, request.providerId, blockProvider = false, counterOfferPrice = offerAmt)
+                        showCounterOffer = false; showRejectDialog = false
+                    },
+                    enabled = (counterOfferText.toDoubleOrNull() ?: 0.0) >= baseFee,
+                    colors = ButtonDefaults.buttonColors(containerColor = purple)
+                ) { androidx.compose.material3.Text(if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN) "পাঠান" else "Send Offer") }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showCounterOffer = false }) {
+                    androidx.compose.material3.Text(AppStrings.cancelBtn)
+                }
+            }
+        )
+    }
+
     if (showRejectDialog && request != null) {
+        val isBnRej = AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showRejectDialog = false },
-            title = { androidx.compose.material3.Text(if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN) "প্রত্যাখ্যানের কারণ" else "Reason for rejection") },
+            title = { androidx.compose.material3.Text(if (isBnRej) "প্রত্যাখ্যানের কারণ" else "Reason for rejection") },
             text  = {
                 androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
-                    androidx.compose.material3.Text(if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN) "কেন প্রত্যাখ্যান করছেন?" else "Why are you rejecting this provider?", fontSize = 13.sp, color = Color(0xFF757575))
+                    androidx.compose.material3.Text(if (isBnRej) "কেন প্রত্যাখ্যান করছেন?" else "Why are you rejecting this provider?", fontSize = 13.sp, color = Color(0xFF757575))
                     Button(
                         onClick = {
-                            // Price reason: provider can bid on this job again
-                            vm.disagreeWithProvider(request.id, request.providerId, blockProvider = false)
+                            counterOfferText = ""
                             showRejectDialog = false
+                            showCounterOffer = true
                         },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = purple)
                     ) {
-                        androidx.compose.material3.Text(if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN) "💰 দাম বেশি" else "💰 Price too high")
+                        androidx.compose.material3.Text(if (isBnRej) "💰 দাম বেশি — পাল্টা প্রস্তাব করুন" else "💰 Price too high — Counter offer")
                     }
                     OutlinedButton(
                         onClick = {
-                            // Other reason: block provider from this job
                             vm.disagreeWithProvider(request.id, request.providerId, blockProvider = true)
                             showRejectDialog = false
                         },
                         modifier = Modifier.fillMaxWidth(),
                         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFC62828))
                     ) {
-                        androidx.compose.material3.Text(if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN) "❌ অন্য কারণ" else "❌ Other reason", color = Color(0xFFC62828))
+                        androidx.compose.material3.Text(if (isBnRej) "❌ অন্য কারণ" else "❌ Other reason", color = Color(0xFFC62828))
                     }
                 }
             },
@@ -83,24 +124,9 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
     }
     var showAreaPicker2  by remember { mutableStateOf(false) }
     var editServiceType  by remember { mutableStateOf(request?.serviceType ?: "") }
-    var editAddress      by remember { mutableStateOf(request?.address ?: "") }
-    var editArea         by remember { mutableStateOf(request?.area ?: "") }
     var editDescription  by remember { mutableStateOf(request?.description ?: "") }
+    var editMaxPrice     by remember { mutableStateOf(request?.maxPrice ?: 0.0) }
 
-    if (showAreaPicker2) {
-        AreaPickerDialog(
-            selected    = if (editArea.isNotBlank()) setOf(editArea) else emptySet(),
-            multiSelect = false,
-            accentColor = purple,
-            title       = AppStrings.addressHint,
-            onDismiss   = { showAreaPicker2 = false },
-            onConfirm   = { picked ->
-                editArea    = picked.firstOrNull() ?: ""
-                if (editArea.isNotBlank()) editAddress = editArea
-                showAreaPicker2 = false
-            }
-        )
-    }
 
     if (showEditDialog) {
         androidx.compose.material3.AlertDialog(
@@ -166,28 +192,36 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                             placeholder = { androidx.compose.material3.Text(if (AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN) "সমস্যার বিবরণ..." else "Describe the issue...") }
                         )
                     }
+                    // Max price filter (editable)
                     item {
-                        OutlinedTextField(
-                            value = editAddress, onValueChange = { editAddress = it; if (it != editArea) editArea = "" },
-                            label = { androidx.compose.material3.Text(AppStrings.addressLabel) },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
-                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = purple, cursorColor = purple),
-                            singleLine = true
-                        )
-                    }
-                    item {
-                        OutlinedButton(
-                            onClick = { showAreaPicker2 = true },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, purple)
+                        val isBnEdit2 = AppStrings.lang == com.example.serviceapp.utils.AppLanguage.BN
+                        androidx.compose.foundation.layout.Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            androidx.compose.material3.Text(
-                                if (editArea.isNotBlank()) "📍 $editArea" else AppStrings.addressHint,
-                                color = purple, fontSize = 13.sp
-                            )
+                            androidx.compose.material3.Text(AppStrings.maxFeeLabel, fontSize = 12.sp, color = Color(0xFF757575))
+                            androidx.compose.material3.Surface(
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                                color = if (editMaxPrice > 0.0) purple else Color(0xFFF3E5F5)
+                            ) {
+                                androidx.compose.material3.Text(
+                                    if (editMaxPrice == 0.0) AppStrings.anyFilter else "৳${editMaxPrice.toInt()}",
+                                    fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                                    color = if (editMaxPrice > 0.0) Color.White else Color(0xFF424242),
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                                )
+                            }
                         }
+                        androidx.compose.material3.Slider(
+                            value       = editMaxPrice.toFloat(),
+                            onValueChange = { raw -> editMaxPrice = ((raw / 100).toInt() * 100.0) },
+                            valueRange  = 0f..3000f, steps = 29,
+                            colors      = androidx.compose.material3.SliderDefaults.colors(
+                                activeTrackColor = purple, thumbColor = purple,
+                                inactiveTrackColor = purple.copy(alpha = 0.2f)
+                            )
+                        )
                     }
                 }
             },
@@ -195,10 +229,10 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                 Button(
                     onClick = {
                         if (request != null)
-                            vm.updateRequest(request.id, editServiceType, editDescription.trim(), editAddress.trim(), editArea)
+                            vm.updateRequest(request.id, editServiceType, editDescription.trim(), editMaxPrice)
                         showEditDialog = false
                     },
-                    enabled = editServiceType.isNotBlank() && editAddress.isNotBlank(),
+                    enabled = editServiceType.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(containerColor = purple)
                 ) { androidx.compose.material3.Text(AppStrings.saveChanges) }
             },
@@ -270,10 +304,8 @@ fun ClientRequestDetailScreen(requestId: String, vm: ClientViewModel, nav: NavCo
                     OutlinedButton(
                         onClick = {
                             editServiceType  = request.serviceType
-                            editAddress      = request.address
-                            editArea         = request.area
                             editDescription  = request.description
-                            // Pre-select problems from description (comma-separated)
+                            editMaxPrice     = request.maxPrice
                             editProblems     = request.description.split(", ").filter { it.isNotBlank() }.toSet()
                             showEditDialog   = true
                         },

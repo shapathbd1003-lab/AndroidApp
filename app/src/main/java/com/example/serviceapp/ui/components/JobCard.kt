@@ -167,13 +167,13 @@ fun JobCard(
                     }
                 }
             }
-            // Phone revealed after client confirms; always show the row once confirmed
-            if (job.status in listOf("agreed", "on_the_way", "arrived", "working", "finished")) {
+            // Phone revealed after client confirms; only shown when phone is available
+            if (job.status in listOf("agreed", "on_the_way", "arrived", "working", "finished") && job.phone.isNotBlank()) {
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Phone, null, tint = Color(0xFF9E9E9E), modifier = Modifier.size(15.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text(job.phone.ifBlank { "—" }, fontSize = 12.sp, color = AppColors.TextSecondary)
+                    Text(job.phone, fontSize = 12.sp, color = AppColors.TextSecondary)
                 }
             }
 
@@ -185,7 +185,7 @@ fun JobCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 when {
-                    // Pending: show Accept button (or insufficient points warning)
+                    // Pending: navigate to detail screen where provider sets a price then accepts
                     job.status == "pending" -> {
                         if (!hasPoints) {
                             Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFFFEBEE)) {
@@ -194,18 +194,13 @@ fun JobCard(
                             }
                         } else {
                             Button(
-                                onClick = { if (!actionLoading) { actionLoading = true; onAccept() } },
-                                enabled = !actionLoading,
+                                onClick = { onClick() },  // opens JobDetailScreen where price is set
                                 shape = RoundedCornerShape(10.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
                             ) {
-                                if (actionLoading) {
-                                    CircularProgressIndicator(Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
-                                } else {
-                                    Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(AppStrings.accept, fontSize = 13.sp)
-                                }
+                                Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(AppStrings.accept, fontSize = 13.sp)
                             }
                         }
                     }

@@ -11,4 +11,5 @@ import androidx.compose.runtime.setValue
  */
 object PendingNavigation {
     var clientRequestId: String? by mutableStateOf(null)
+    var providerJobId:   String? by mutableStateOf(null)
 }

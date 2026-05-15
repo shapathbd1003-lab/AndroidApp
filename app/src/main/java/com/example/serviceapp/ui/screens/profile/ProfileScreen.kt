@@ -429,7 +429,8 @@ fun ProfileScreen(vm: MainViewModel, nav: NavController) {
                         Text(AppStrings.noReviewsYet, fontSize = 13.sp, color = AppColors.TextSecondary)
                     }
                 } else {
-                    val avg = reviews.map { it.rating }.average()
+                    // Use p.rating (same value as Dashboard + profile header) for consistency
+                    val avg = p.rating
                     Column(Modifier.padding(16.dp)) {
                         // Summary row
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,

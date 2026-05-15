@@ -156,10 +156,10 @@ fun JobDetailScreen(id: String, vm: MainViewModel, nav: NavController) {
                     }
                     Spacer(Modifier.height(14.dp))
                     InfoRow(Icons.Default.LocationOn, AppStrings.address, job.address, Color(0xFF1565C0))
-                    // Contact revealed once client has confirmed; always show the row so provider can see it
-                    if (job.status in listOf("agreed", "on_the_way", "arrived", "working", "finished")) {
+                    // Contact revealed from agreed status; hidden only when phone is genuinely unavailable
+                    if (job.status in listOf("agreed", "on_the_way", "arrived", "working", "finished") && job.phone.isNotBlank()) {
                         Spacer(Modifier.height(10.dp))
-                        InfoRow(Icons.Default.Phone, AppStrings.contact, job.phone.ifBlank { "—" }, Color(0xFF6A1B9A))
+                        InfoRow(Icons.Default.Phone, AppStrings.contact, job.phone, Color(0xFF6A1B9A))
                     }
                 }
             }

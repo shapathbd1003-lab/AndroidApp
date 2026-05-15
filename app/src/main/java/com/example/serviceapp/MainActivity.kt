@@ -28,7 +28,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        intent?.getStringExtra("requestId")?.let { PendingNavigation.clientRequestId = it }
+        intent?.getStringExtra("requestId")?.let    { PendingNavigation.clientRequestId = it }
+        intent?.getStringExtra("providerJobId")?.let { PendingNavigation.providerJobId   = it }
 
         NotificationHelper.init(this)
         ImageUploader.init(this)
@@ -56,6 +57,7 @@ class MainActivity : ComponentActivity() {
     // Handles notification tap when the activity is already running (SINGLE_TOP)
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        intent.getStringExtra("requestId")?.let { PendingNavigation.clientRequestId = it }
+        intent.getStringExtra("requestId")?.let    { PendingNavigation.clientRequestId = it }
+        intent.getStringExtra("providerJobId")?.let { PendingNavigation.providerJobId   = it }
     }
 }

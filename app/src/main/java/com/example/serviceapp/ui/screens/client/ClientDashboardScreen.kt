@@ -170,9 +170,9 @@ private fun RequestCard(req: ServiceRequest, onClick: () -> Unit) {
                 Spacer(Modifier.height(8.dp))
                 HorizontalDivider()
                 Spacer(Modifier.height(8.dp))
-                // Phone only shown once provider is physically traveling
-                val showPhone = req.status in listOf("on_the_way","arrived","working","finished","completed")
-                val providerText = if (showPhone && req.providerPhone.isNotBlank())
+                // Phone only shown while provider is actively traveling or working (hidden after finished)
+                val showPhone = req.status in listOf("on_the_way","arrived","working") && req.providerPhone.isNotBlank()
+                val providerText = if (showPhone)
                     "${AppStrings.providerLabel}: ${req.providerName} • ${req.providerPhone}"
                 else
                     "${AppStrings.providerLabel}: ${req.providerName}"

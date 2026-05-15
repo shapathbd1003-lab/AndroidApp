@@ -114,21 +114,44 @@ object ClientRepository {
     suspend fun disagreeWithProvider(
         requestId: String,
         rejectedProviderId: String = "",
-        blockProvider: Boolean = false   // true = "Other" reason; false = "Price" (provider can re-bid)
+        blockProvider: Boolean = false,
+        counterOfferPrice: Double = 0.0  // > 0 = client made a counter-offer for price rejection
     ): Result<Unit> = runCatching {
-        val updates = mutableMapOf<String, Any>(
-            "status"          to "pending",
-            "providerId"      to "",
-            "providerName"    to "",
-            "providerPhone"   to "",
-            "providerRating"  to 0.0,
-            "providerBaseFee" to 0.0,
-            "agreedPrice"     to 0.0
-        )
-        if (blockProvider && rejectedProviderId.isNotBlank()) {
-            updates["blockedProviders"] = FieldValue.arrayUnion(rejectedProviderId)
+        val req     = requests.find { it.id == requestId }
+        val svcType = AppStrings.serviceTypeName(req?.serviceType ?: "")
+
+        if (counterOfferPrice > 0.0 && rejectedProviderId.isNotBlank()) {
+            // Price rejection with counter-offer: send back to THAT provider only
+            db.collection("requests").document(requestId).update(mapOf(
+                "status"              to "counter_offered",
+                "counterOfferPrice"   to counterOfferPrice,
+                "counterOfferFor"     to rejectedProviderId,
+                "providerId"          to "",
+                "providerName"        to "",
+                "providerPhone"       to "",
+                "providerRating"      to 0.0,
+                "providerBaseFee"     to 0.0,
+                "agreedPrice"         to 0.0
+            )).await()
+            NotificationHelper.showCounterOfferNotification(svcType, counterOfferPrice.toInt())
+        } else {
+            val updates = mutableMapOf<String, Any>(
+                "status"          to "pending",
+                "providerId"      to "",
+                "providerName"    to "",
+                "providerPhone"   to "",
+                "providerRating"  to 0.0,
+                "providerBaseFee" to 0.0,
+                "agreedPrice"     to 0.0,
+                "counterOfferPrice" to 0.0,
+                "counterOfferFor"   to ""
+            )
+            if (blockProvider && rejectedProviderId.isNotBlank()) {
+                updates["blockedProviders"] = FieldValue.arrayUnion(rejectedProviderId)
+            }
+            db.collection("requests").document(requestId).update(updates).await()
+            NotificationHelper.showClientRejectedNotification(svcType)
         }
-        db.collection("requests").document(requestId).update(updates).await()
     }
 
     suspend fun cancelRequest(requestId: String): Result<Unit> = runCatching {
@@ -138,13 +161,12 @@ object ClientRepository {
     // ── Edit a pending request ────────────────────────────────────────────────
     suspend fun updateRequest(
         requestId: String, serviceType: String, description: String,
-        address: String, area: String
+        maxPrice: Double = 0.0
     ): Result<Unit> = runCatching {
         db.collection("requests").document(requestId).update(mapOf(
             "serviceType" to serviceType,
             "description" to description,
-            "address"     to address,
-            "area"        to area
+            "maxPrice"    to maxPrice
         )).await()
     }
 
@@ -218,6 +240,7 @@ object ClientRepository {
     fun listenToRequests(): ListenerRegistration? {
         val uid = client?.id ?: return null
         return db.collection("requests").whereEqualTo("clientId", uid)
+            .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
             .addSnapshotListener { snaps, _ ->
                 requests.clear()
                 snaps?.documents?.forEach { doc ->
